@@ -1,6 +1,13 @@
 spring:
-  application:
-    name: retrip
+  profiles:
+    default: local
+
+---
+spring:
+  # Profile Config
+  config:
+    activate:
+      on-profile: local
 
   datasource:
     driver-class-name: ${DB_DRIVER_CLASS_NAME}
@@ -17,3 +24,27 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+---
+spring:
+  # Profile Config
+  config:
+    activate:
+      on-profile: test
+
+  # DB Config
+  datasource:
+    driver-class-name: ${TEST_DB_DRIVER_CLASS_NAME}
+    url: ${TEST_DB_URL}
+    username: ${TEST_DB_USERNAME}
+    password: ${TEST_DB_PASSWORD}
+
+  # JPA Config
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
