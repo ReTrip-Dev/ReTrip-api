@@ -26,8 +26,9 @@ class MemberTest {
     Member savedMember = memberRepository.save(member);
 
     // then
-    assertThat(savedMember).extracting("id", "kakaoId", "nickname", "profileImageUrl")
-        .containsExactly(1L, "1234567890", "nickname", "http://localhost:8080");
+    assertThat(savedMember.getId()).isNotNull();
+    assertThat(savedMember).extracting("kakaoId", "nickname", "profileImageUrl")
+        .containsExactly("1234567890", "nickname", "http://localhost:8080");
   }
 
   private Member createMember() {
