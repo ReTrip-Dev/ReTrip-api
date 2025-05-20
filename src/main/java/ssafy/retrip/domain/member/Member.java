@@ -20,14 +20,14 @@ public class Member extends BaseEntity {
 
   private String kakaoId;
 
+  private String email;
+
   private String nickname;
 
-  private String profileImageUrl;
-
   @Builder
-  private Member(String kakaoId, String nickname, String profileImageUrl) {
+  private Member(String kakaoId, String email, String nickname) {
     this.kakaoId = kakaoId;
+    this.email = email;
     this.nickname = nickname;
-    this.profileImageUrl = profileImageUrl;
   }
 }
