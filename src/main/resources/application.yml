@@ -50,6 +50,11 @@ spring:
               - profile_nickname    # 닉네임
               - account_email       # 이메일
 
+server:
+  servlet:
+    session:
+      timeout: 60m
+
 ---
 spring:
   # Profile Config
@@ -98,3 +103,8 @@ spring:
               - name                # 이름
               - profile_nickname    # 닉네임
               - account_email       # 이메일
+
+server:
+  servlet:
+    session:
+      timeout: 60m
