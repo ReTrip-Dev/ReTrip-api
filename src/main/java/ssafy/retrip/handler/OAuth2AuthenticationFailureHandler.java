@@ -6,17 +6,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
+@RequiredArgsConstructor
 public class OAuth2AuthenticationFailureHandler implements AuthenticationFailureHandler {
 
-  private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+  private final RedirectStrategy redirectStrategy;
 
   private static final String REDIRECT_URL = "/login/callback";
   private static final String FRONT_SERVER = "http://localhost:5173";
@@ -36,6 +37,5 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
         .fromUriString(FRONT_SERVER + REDIRECT_URL)
         .queryParam("error", errorMessage)
         .build().toUriString();
-
   }
 }
