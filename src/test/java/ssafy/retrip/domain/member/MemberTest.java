@@ -27,8 +27,8 @@ class MemberTest {
 
     // then
     assertThat(savedMember.getId()).isNotNull();
-    assertThat(savedMember).extracting("kakaoId", "nickname", "profileImageUrl")
-        .containsExactly("1234567890", "nickname", "http://localhost:8080");
+    assertThat(savedMember).extracting("kakaoId", "nickname", "email")
+        .containsExactly("1234567890", "nickname", "1234@naver.com");
   }
 
   private Member createMember() {
@@ -36,6 +36,6 @@ class MemberTest {
     return Member.builder()
         .kakaoId("1234567890")
         .nickname("nickname")
-        .profileImageUrl("http://localhost:8080").build();
+        .email("1234@naver.com").build();
   }
 }
