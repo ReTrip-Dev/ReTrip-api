@@ -57,6 +57,26 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+
+    // AWS - 중복된 의존성 제거 및 간소화
+    implementation platform('software.amazon.awssdk:bom:2.20.56')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:url-connection-client'
+
+    // EXIF/메타데이터 - 안정적인 버전 사용
+    implementation 'com.drewnoakes:metadata-extractor:2.18.0'
+
+    // TwelveMonkeys ImageIO - 안정적인 버전 사용
+    implementation 'com.twelvemonkeys.imageio:imageio-core:3.9.4'
+    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.9.4'
+    implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.9.4'
+
+    // Apache Commons Imaging (실험적 의존성 제거)
+    implementation 'org.apache.commons:commons-imaging:1.0-alpha3'
+
+    // 이미지 처리 관련 라이브러리 - 안정적인 버전으로 변경
+    implementation 'net.coobird:thumbnailator:0.4.19'
+
 }
 
 tasks.named('test') {

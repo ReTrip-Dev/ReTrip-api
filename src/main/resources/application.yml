@@ -2,13 +2,20 @@ spring:
   profiles:
     default: local
 
+  # File Upload Setting
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
 ---
 spring:
   # Profile Config
   config:
     activate:
       on-profile: local
-
+    import:
+      - optional:file:.env
   datasource:
     driver-class-name: ${DB_DRIVER_CLASS_NAME}
     url: ${DB_URL}
@@ -20,7 +27,7 @@ spring:
     show-sql: true
     database: mysql
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
@@ -54,6 +61,19 @@ server:
   servlet:
     session:
       timeout: 60m
+
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      region:
+        static: ap-northeast-2
+      s3:
+        bucket: retrip-photos-ssafy04
+        dir-name: images
+      stack:
+        auto: false
 
 ---
 spring:
@@ -108,3 +128,16 @@ server:
   servlet:
     session:
       timeout: 60m
+
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      region:
+        static: ap-northeast-2
+      s3:
+        bucket: retrip-photos-ssafy04
+        dir-name: test-images
+      stack:
+        auto: false
