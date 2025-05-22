@@ -46,6 +46,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     testImplementation 'org.springframework.security:spring-security-test'
 
+    // Apache StringUtils
+    implementation 'org.apache.commons:commons-lang3:3.17.0'
+
     // OAuth2 Client
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 

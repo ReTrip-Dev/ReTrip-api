@@ -12,7 +12,9 @@ import org.springframework.security.config.annotation.web.configurers.HttpBasicC
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import ssafy.retrip.api.service.oauth.CustomOAuth2UserService;
+import ssafy.retrip.filter.SessionAuthenticationFilter;
 import ssafy.retrip.handler.OAuth2AuthenticationFailureHandler;
 import ssafy.retrip.handler.OAuth2AuthenticationSuccessHandler;
 
@@ -22,6 +24,7 @@ import ssafy.retrip.handler.OAuth2AuthenticationSuccessHandler;
 public class SecurityConfig {
 
   private final CustomOAuth2UserService customOAuth2UserService;
+  private final SessionAuthenticationFilter sessionAuthenticationFilter;
   private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
   private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
 
@@ -32,7 +35,9 @@ public class SecurityConfig {
         .csrf(CsrfConfigurer::disable)
         .httpBasic(HttpBasicConfigurer::disable)
         .formLogin(FormLoginConfigurer::disable)
-        .logout(LogoutConfigurer::disable)
+        .logout(LogoutConfigurer::disable);
+
+    http
         .authorizeHttpRequests(auth -> auth
             .anyRequest().permitAll()
         );
@@ -47,8 +52,17 @@ public class SecurityConfig {
             )
         );
 
-    http.sessionManagement(
-        session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+    http
+        .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+    http
+        .sessionManagement(
+            session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(true)
+                .expiredUrl("/login?expired=true")
+        );
 
     return http.build();
   }
