@@ -9,13 +9,16 @@ import com.drew.metadata.exif.GpsDirectory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ssafy.retrip.aws.S3Uploader;
 import ssafy.retrip.api.controller.image.response.ImageResponseDto;
+import ssafy.retrip.api.service.retrip.RetripService;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.image.ImageRepository;
+import ssafy.retrip.domain.retrip.Retrip;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -36,11 +39,31 @@ public class ImageService {
 
     private final S3Uploader s3Uploader;
     private final ImageRepository imageRepository;
+    private final RetripService retripService;
+    
+    // yml 설정에서 값 주입
+    @Value("${retrip.image.min-count}")
+    private int minImages;
+    
+    @Value("${retrip.image.max-count}")
+    private int maxImages;
 
     @Transactional
     public List<ImageResponseDto> uploadImages(List<MultipartFile> images, String dirName) throws IOException {
         List<ImageResponseDto> uploadedImages = new ArrayList<>();
+        List<Image> savedImages = new ArrayList<>();
         List<String> errors = new ArrayList<>();
+        
+        // 이미지 개수 검증
+        if (images == null || images.size() < minImages) {
+            log.warn("이미지가 {}장 미만입니다. 현재 {}장", minImages, images != null ? images.size() : 0);
+            throw new IllegalArgumentException("이미지는 최소 " + minImages + "장 이상 업로드해야 합니다.");
+        }
+        
+        if (images.size() > maxImages) {
+            log.warn("이미지가 {}장을 초과했습니다. 처음 {}장만 처리합니다.", maxImages, maxImages);
+            images = images.subList(0, maxImages);
+        }
         
         for (MultipartFile image : images) {
             try {
@@ -84,9 +107,10 @@ public class ImageService {
                                 .dirName(dirName)
                                 .build());
                         
+                        savedImages.add(savedImage);
                         uploadedImages.add(ImageResponseDto.from(savedImage));
                         
-                        // 파일 처리 후 임시 파일 삭제
+                        // 임시 파일 삭제
                         try {
                             file.delete();
                         } catch (Exception e) {
@@ -102,6 +126,21 @@ public class ImageService {
         
         if (!errors.isEmpty()) {
             log.warn("일부 이미지 처리 실패: {}", errors);
+        }
+
+
+        // 저장된 이미지가 최소 개수 이상인 경우만 Retrip 생성
+        if (savedImages.size() >= minImages) {
+            try {
+                Retrip retrip = retripService.createRetrip(savedImages, dirName);
+                log.info("Retrip 생성 완료: {}, 이미지 수: {}", retrip.getId(), savedImages.size());
+            } catch (Exception e) {
+                log.error("Retrip 생성 중 오류 발생", e);
+            }
+        } else {
+            log.warn("저장된 이미지가 {}장 미만으로 Retrip을 생성하지 않습니다. 이미지 수: {}", minImages, savedImages.size());
+            // 저장된 이미지가 MIN_IMAGES 미만인 경우 롤백을 위해 예외 발생
+            throw new IllegalStateException("저장된 이미지가 " + minImages + "장 미만입니다. 유효한 이미지를 더 업로드해주세요.");
         }
         
         return uploadedImages;
@@ -224,7 +263,10 @@ public class ImageService {
             }
             
             if (date != null) {
-                metadata.takenDate = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+                // 중요: EXIF의 시간은 이미 로컬 시간이므로 시스템 기본 시간대로 변환하지 않음
+                // ZoneId.systemDefault() 대신 ZoneId.of("UTC")를 사용하여 시간대 변환 문제 방지
+                metadata.takenDate = LocalDateTime.ofInstant(date.toInstant(), ZoneId.of("UTC"));
+                log.info("추출된 촬영 시간(UTC 기준): {}", metadata.takenDate);
             }
         }
     }

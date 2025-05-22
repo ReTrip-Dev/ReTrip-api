@@ -8,6 +8,12 @@ spring:
       max-file-size: 10MB
       max-request-size: 50MB
 
+# ReTrip 애플리케이션 설정
+retrip:
+  image:
+    min-count: 5
+    max-count: 30
+
 ---
 spring:
   # Profile Config
@@ -128,3 +134,4 @@ spring:
         dir-name: test-images
       stack:
         auto: false
+
