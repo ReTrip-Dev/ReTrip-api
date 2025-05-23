@@ -43,16 +43,15 @@ public class S3Uploader {
                 .build();
     }
 
-    public String upload(MultipartFile multipartFile, String dirName) throws IOException {
+    public String upload(MultipartFile multipartFile, String dirName, String storedFileName) throws IOException {
         File uploadFile = convert(multipartFile)
                 .orElseThrow(() -> new IllegalArgumentException("MultipartFile -> File 변환 실패"));
         
-        return upload(uploadFile, dirName);
+        return upload(uploadFile, dirName, storedFileName);
     }
 
-    private String upload(File uploadFile, String dirName) {
-        String fileName = dirName + "/" + UUID.randomUUID() + uploadFile.getName();
-        String uploadImageUrl = putS3(uploadFile, fileName);
+    private String upload(File uploadFile, String dirName, String storedFileName) {
+        String uploadImageUrl = putS3(uploadFile, dirName, storedFileName);
         
         // 로컬에 생성된 파일 삭제
         removeNewFile(uploadFile);
@@ -60,14 +59,17 @@ public class S3Uploader {
         return uploadImageUrl;
     }
 
-    private String putS3(File uploadFile, String fileName) {
+    private String putS3(File uploadFile, String dirName, String fileName) {
+        // 폴더 구조 생성 (dirName/fileName 형태)
+        String key = dirName + "/" + fileName;
+
         s3Client.putObject(PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(fileName)
-                .build(), 
+                        .bucket(bucket)
+                        .key(key)
+                        .build(),
                 RequestBody.fromFile(uploadFile));
-        
-        return s3Client.utilities().getUrl(builder -> builder.bucket(bucket).key(fileName)).toString();
+
+        return s3Client.utilities().getUrl(builder -> builder.bucket(bucket).key(key)).toString();
     }
 
     private void removeNewFile(File targetFile) {
