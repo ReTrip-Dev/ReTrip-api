@@ -5,13 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ssafy.retrip.api.controller.image.response.ImageResponseDto;
+import ssafy.retrip.api.service.retrip.response.ImageAnalysisResponse;
 import ssafy.retrip.domain.image.Image;
+import ssafy.retrip.domain.member.Member;
+import ssafy.retrip.domain.member.MemberRepository;
 import ssafy.retrip.domain.retrip.Retrip;
 import ssafy.retrip.domain.retrip.RetripRepository;
 import ssafy.retrip.domain.retrip.TimeSlot;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -22,6 +23,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RetripService {
     private final RetripRepository retripRepository;
+    private final MemberRepository memberRepository;
+    private final ChatGptProxyService chatGptProxyService;
 
     // yml 설정에서 값 주입
     @Value("${retrip.image.min-count}")
@@ -30,69 +33,88 @@ public class RetripService {
     @Value("${retrip.image.max-count}")
     private int maxImages;
 
+    /**
+     * kakaoId를 기반으로 빈 Retrip 객체를 생성하는 메서드
+     * @param memberId 회원의 카카오 ID
+     * @return 생성된 Retrip 객체
+     */
+    @Transactional
+    public Retrip createEmptyRetrip(String memberId) {
+        // 카카오 ID로 회원 조회
+        Member member = memberRepository.findByKakaoId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 카카오 ID를 가진 회원이 존재하지 않습니다: " + memberId));
+        
+        log.info("회원 정보 조회 성공: kakaoId={}, email={}", memberId, member.getEmail());
+        
+        // 빈 Retrip 객체 생성
+        Retrip retrip = Retrip.builder()
+                .member(member) // 회원 설정
+                .startDate(LocalDateTime.now())
+                .endDate(LocalDateTime.now())
+                .imageCount(0)
+                .build();
+        
+        // Retrip 저장
+        Retrip savedRetrip = retripRepository.save(retrip);
+        log.info("빈 Retrip 생성 완료: retripId={}, memberId={}", savedRetrip.getId(), member.getId());
+        
+        return savedRetrip;
+    }
+
     // 다른 서비스에서 호출 가능하도록 public으로 변경
     @Transactional
-    public Retrip createRetrip(List<Image> images, String dirName) {
-        // 이미지 개수 검증
-        if (images == null || images.size() < minImages) {
-            throw new IllegalArgumentException("Retrip 생성을 위해서는 최소 " + minImages + "장의 이미지가 필요합니다.");
-        }
-
-        if (images.size() > maxImages) {
-            log.warn("이미지가 {}장을 초과했습니다. 처음 {}장만 처리합니다.", maxImages, maxImages);
-            images = images.subList(0, maxImages);
-        }
+    public Retrip updateRetripWithImageData(List<Image> images, long retripId, String memberId) {
+        Retrip retrip = retripRepository.findById(retripId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 ReTrip이 존재하지 않습니다. ID: " + retripId));
 
         // 1. 이미지들의 시간 정렬 (여행 시작/종료 시간 결정)
         images.sort(Comparator.comparing(Image::getTakenDate));
-        LocalDateTime startDate = images.get(0).getTakenDate();
-        LocalDateTime endDate = images.get(images.size() - 1).getTakenDate();
-
-        // 디버깅을 위한 로그 추가
-        log.info("이미지 시간대 분석 시작 - 총 이미지 수: {}", images.size());
-        for (int i = 0; i < Math.min(10, images.size()); i++) {
-            LocalDateTime takenDate = images.get(i).getTakenDate();
-            TimeSlot slot = TimeSlot.from(takenDate);
-            log.info("이미지 {}: 시간={}, 시간대={} ({})", 
-                     i, 
-                     takenDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                     slot,
-                     slot.getTimeRange());
-        }
+        retrip.setStartDate(images.get(0).getTakenDate());
+        retrip.setEndDate(images.get(images.size() - 1).getTakenDate());
 
         // 2. 총 이동거리 계산
         double totalDistance = calculateTotalDistance(images);
+        retrip.setTotalDistance(totalDistance);
 
-        // 3. 주요 시간대 분석 (원본 시간 사용)
+        // 3. 주요 시간대 분석
         TimeSlot mainTimeSlot = analyzeMainTimeSlot(images);
-        log.info("주요 시간대: {} ({})", mainTimeSlot, mainTimeSlot.getTimeRange());
+        retrip.setMainTimeSlot(mainTimeSlot);
 
-        // 4. 가장 많이 촬영한 장소 분석
+        // 4. 가장 많이 찍은 장소 분석
         Map<String, Object> mainLocationInfo = analyzeMainLocation(images);
-        String mainLocation = (String) mainLocationInfo.get("name");
-        Double mainLocationLat = (Double) mainLocationInfo.get("latitude");
-        Double mainLocationLng = (Double) mainLocationInfo.get("longitude");
+        retrip.setMainLocation((String) mainLocationInfo.get("name"));
+        retrip.setMainLocationLat((Double) mainLocationInfo.get("latitude"));
+        retrip.setMainLocationLng((Double) mainLocationInfo.get("longitude"));
 
-        // 5. Retrip 엔티티 생성
-        Retrip retrip = Retrip.builder()
-                .totalDistance(totalDistance)
-                .mainTimeSlot(mainTimeSlot)
-                .mainLocation(mainLocation)
-                .mainLocationLat(mainLocationLat)
-                .mainLocationLng(mainLocationLng)
-                .startDate(startDate)
-                .endDate(endDate)
-                .imageCount(images.size())
-                .name(generateTripName(dirName, startDate))
-                .description("이 여행에서는 " + mainLocation + "에서 가장 많은 사진을 찍었으며, " +
-                        "주로 " + mainTimeSlot.getDescription() + "에 활동했습니다. " +
-                        "총 이동거리는 " + String.format("%.2f", totalDistance) + "km입니다.")
-                .build();
+        // 5. 이미지 카운트
+        retrip.setImageCount(images.size());
 
-        // 6. Image와 Retrip 연결 (개선된 1:N 관계 활용)
-        retrip.addImages(images);
+        // 6. ChatGPT API를 사용하여 여행 설명 생성
+        try {
+            ImageAnalysisResponse analysisResponse = chatGptProxyService.getImageAnalysis(memberId, retripId);
+            
+            if (analysisResponse != null && analysisResponse.getTravel_image_analysis() != null) {
+                ImageAnalysisResponse.TravelAnalysis travelAnalysis = 
+                    analysisResponse.getTravel_image_analysis().getTravel_analysis();
+                
+                if (travelAnalysis != null) {
+                    // ReTrip 객체에 분석 결과 저장
+                    retrip.setMbti(travelAnalysis.getMbti());
+                    retrip.setOverallMood(travelAnalysis.getOverall_mood());
+                    
+                    // Top 방문 장소 설정
+                    if (travelAnalysis.getTop_visit_place() != null) {
+                        retrip.setTopVisitPlace(travelAnalysis.getTop_visit_place());
+                    }
+                    
+                    // 추가 정보는 필요에 따라 설정
+                    log.info("이미지 분석 결과 설정 완료: retripId={}", retripId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("이미지 분석 결과 처리 중 오류 발생", e);
+        }
 
-        // 7. Retrip 저장
         return retripRepository.save(retrip);
     }
 

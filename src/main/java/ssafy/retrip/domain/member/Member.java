@@ -1,16 +1,17 @@
 package ssafy.retrip.domain.member;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import ssafy.retrip.domain.BaseEntity;
+import ssafy.retrip.domain.retrip.Retrip;
 
 @Getter
 @Entity
@@ -30,10 +31,27 @@ public class Member extends BaseEntity implements Serializable {
 
   private String nickname;
 
+  // Retrip과의 관계 설정 (1:N)
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Retrip> retrips = new ArrayList<>();
+
   @Builder
   private Member(String kakaoId, String email, String nickname) {
     this.kakaoId = kakaoId;
     this.email = email;
     this.nickname = nickname;
+    this.retrips = new ArrayList<>();
+  }
+  
+  /**
+   * Retrip 추가 메서드 (양방향 관계 처리)
+   */
+  public void addRetrip(Retrip retrip) {
+    if (retrip != null && !this.retrips.contains(retrip)) {
+      this.retrips.add(retrip);
+      if (retrip.getMember() != this) {
+        retrip.setMember(this);
+      }
+    }
   }
 }

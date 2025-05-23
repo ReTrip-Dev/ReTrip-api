@@ -21,12 +21,12 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
       FilterChain filterChain) throws ServletException, IOException {
 
     HttpSession session = request.getSession();
-    String kakaoId = (String) session.getAttribute("member");
-
-    if (isEmpty(kakaoId)) {
-      response.sendRedirect("/login");
-      return;
-    }
+//    String kakaoId = (String) session.getAttribute("member");
+//
+//    if (isEmpty(kakaoId)) {
+//      response.sendRedirect("/login");
+//      return;
+//    }
 
     filterChain.doFilter(request, response);
   }
