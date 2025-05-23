@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.retrip.api.service.retrip.response.ImageAnalysisResponse;
 import ssafy.retrip.api.service.vision.request.AnalysisResponse;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.member.Member;
@@ -95,23 +96,34 @@ public class RetripService {
 
         // 6. ChatGPT API를 사용하여 여행 설명 생성
         try {
-            AnalysisResponse analysisResponse = chatGptProxyService.getImageAnalysis(memberId, retripId);
+            ImageAnalysisResponse analysisResponse = chatGptProxyService.getImageAnalysis(memberId, retripId);
             
-            if (analysisResponse != null && analysisResponse.getTravelImageAnalysis() != null) {
-                AnalysisResponse.TravelAnalysis travelAnalysis =
-                    analysisResponse.getTravelImageAnalysis().getTravelAnalysis();
+            if (analysisResponse != null && analysisResponse.getTravel_image_analysis() != null) {
+                ImageAnalysisResponse.TravelAnalysis travelAnalysis =
+                    analysisResponse.getTravel_image_analysis().getTravel_analysis();
                 
                 if (travelAnalysis != null) {
                     // ReTrip 객체에 분석 결과 저장
                     retrip.setMbti(travelAnalysis.getMbti());
-                    retrip.setOverallMood(travelAnalysis.getOverallMood());
+                    retrip.setOverallMood(travelAnalysis.getOverall_mood());
                     
                     // Top 방문 장소 설정
-                    if (travelAnalysis.getTopVisitPlace() != null) {
-                        retrip.setTopVisitPlace(travelAnalysis.getTopVisitPlace());
+                    if (travelAnalysis.getTop_visit_place() != null) {
+                        ImageAnalysisResponse.TopVisitPlace topPlace = travelAnalysis.getTop_visit_place();
+                        retrip.setTopVisitPlace(topPlace.getPlace_name());
+                        
+                        // 주요 장소 좌표 정보가 있으면 업데이트
+                        if (topPlace.getLatitude() != null && topPlace.getLongitude() != null) {
+                            retrip.setMainLocationLat(topPlace.getLatitude());
+                            retrip.setMainLocationLng(topPlace.getLongitude());
+                            retrip.setMainLocation(topPlace.getPlace_name());
+                            log.info("분석 결과 주요 장소 업데이트: {}, 좌표: {}, {}", 
+                                topPlace.getPlace_name(), 
+                                topPlace.getLatitude(), 
+                                topPlace.getLongitude());
+                        }
                     }
                     
-                    // 추가 정보는 필요에 따라 설정
                     log.info("이미지 분석 결과 설정 완료: retripId={}", retripId);
                 }
             }

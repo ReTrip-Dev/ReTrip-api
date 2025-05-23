@@ -42,7 +42,7 @@ public class ImageAnalysisResponse {
         private String overall_mood;
         private Map<String, String> photo_category_ratio;
         private List<Subject> top5_subjects;
-        private String top_visit_place;
+        private TopVisitPlace top_visit_place;
     }
 
     @Data
@@ -52,5 +52,16 @@ public class ImageAnalysisResponse {
     public static class Subject {
         private int count;
         private String subject;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TopVisitPlace {
+        // 실제 JSON 응답과 일치하도록 필드명 수정
+        private Double latitude;
+        private Double longitude;
+        private String place_name;
     }
 }

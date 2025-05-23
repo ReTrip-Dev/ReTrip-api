@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ssafy.retrip.api.service.retrip.request.ImageAnalysisRequest;
+import ssafy.retrip.api.service.retrip.response.ImageAnalysisResponse;
 import ssafy.retrip.api.service.vision.request.AnalysisResponse;
 
 @Slf4j
@@ -26,26 +27,36 @@ public class ChatGptProxyService {
    * @param retripId Retrip ID
    * @return 이미지 분석 결과
    */
-  public AnalysisResponse getImageAnalysis(String memberId, Long retripId) {
+  public ImageAnalysisResponse getImageAnalysis(String memberId, Long retripId) {
     log.info("ChatGPT 중계서버 요청 시작: memberId={}, retripId={}", memberId, retripId);
 
     // 요청 본문 데이터 설정
     ImageAnalysisRequest requestBody = new ImageAnalysisRequest(memberId, retripId);
 
     try {
-      // RestClient를 사용한 API 호출
-      AnalysisResponse response = restClient.post()
+      // 응답 디버깅을 위해 먼저 문자열로 받습니다
+      String responseString = restClient.post()
           .uri(proxyUrl)
           .contentType(MediaType.APPLICATION_JSON)
           .body(requestBody)
           .retrieve()
-          .body(AnalysisResponse.class);
-
-      log.info("ChatGPT 중계서버 응답 수신 성공");
-      return response;
+          .body(String.class);
+      
+      log.info("중계서버 응답: {}", responseString);
+      
+      // 응답이 정상적으로 수신되었으면 객체로 변환
+      if (responseString != null) {
+        // Jackson ObjectMapper를 사용하여 수동 변환
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        ImageAnalysisResponse response = mapper.readValue(responseString, ImageAnalysisResponse.class);
+        log.info("ChatGPT 중계서버 응답 수신 성공");
+        return response;
+      }
+      
+      return null;
     } catch (Exception e) {
-      log.error("ChatGPT 중계서버 통신 중 오류 발생", e);
-      // 오류 발생 시 null 반환 또는 기본 응답 생성
+      log.error("ChatGPT 중계서버 통신 중 오류 발생: {}", e.getMessage(), e);
+      // 오류 발생 시 null 반환
       return null;
     }
   }
