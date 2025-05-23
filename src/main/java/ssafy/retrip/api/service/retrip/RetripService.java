@@ -1,10 +1,15 @@
 package ssafy.retrip.api.service.retrip;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.retrip.api.service.retrip.response.ImageAnalysisResponse;
 import ssafy.retrip.api.service.vision.request.AnalysisResponse;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.member.Member;
@@ -43,9 +48,9 @@ public class RetripService {
         // 카카오 ID로 회원 조회
         Member member = memberRepository.findByKakaoId(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 카카오 ID를 가진 회원이 존재하지 않습니다: " + memberId));
-
+        
         log.info("회원 정보 조회 성공: kakaoId={}, email={}", memberId, member.getEmail());
-
+        
         // 빈 Retrip 객체 생성
         Retrip retrip = Retrip.builder()
                 .member(member) // 회원 설정
@@ -96,18 +101,29 @@ public class RetripService {
             if (analysisResponse != null && analysisResponse.getTravelImageAnalysis() != null) {
                 AnalysisResponse.TravelAnalysis travelAnalysis =
                     analysisResponse.getTravelImageAnalysis().getTravelAnalysis();
-                
+
                 if (travelAnalysis != null) {
                     // ReTrip 객체에 분석 결과 저장
                     retrip.setMbti(travelAnalysis.getMbti());
-                    retrip.setOverallMood(travelAnalysis.getOverallMood());
+                    retrip.setOverallMood(travelAnalysis.getOverall_mood());
                     
                     // Top 방문 장소 설정
-                    if (travelAnalysis.getTopVisitPlace() != null) {
-                        retrip.setTopVisitPlace(travelAnalysis.getTopVisitPlace());
+                    if (travelAnalysis.getTop_visit_place() != null) {
+                        ImageAnalysisResponse.TopVisitPlace topPlace = travelAnalysis.getTop_visit_place();
+                        retrip.setTopVisitPlace(topPlace.getPlace_name());
+
+                        // 주요 장소 좌표 정보가 있으면 업데이트
+                        if (topPlace.getLatitude() != null && topPlace.getLongitude() != null) {
+                            retrip.setMainLocationLat(topPlace.getLatitude());
+                            retrip.setMainLocationLng(topPlace.getLongitude());
+                            retrip.setMainLocation(topPlace.getPlace_name());
+                            log.info("분석 결과 주요 장소 업데이트: {}, 좌표: {}, {}",
+                                topPlace.getPlace_name(),
+                                topPlace.getLatitude(),
+                                topPlace.getLongitude());
+                        }
                     }
-                    
-                    // 추가 정보는 필요에 따라 설정
+
                     log.info("이미지 분석 결과 설정 완료: retripId={}", retripId);
                 }
             }

@@ -26,7 +26,7 @@ public class ImageController {
             @RequestParam("images") List<MultipartFile> images) throws IOException {
         //HttpSession session = request.getSession();
         //String memberId = String.valueOf(session.getAttribute("member"));
-        String memberId = "1234";
+        String memberId = "12344";
 
         try {
             System.out.println("✅ 업로드 시작, 파일 수: " + images.size());
