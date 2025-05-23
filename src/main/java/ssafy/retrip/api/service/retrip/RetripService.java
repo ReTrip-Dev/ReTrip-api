@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ssafy.retrip.api.service.retrip.response.ImageAnalysisResponse;
+import ssafy.retrip.api.service.vision.request.AnalysisResponse;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.member.Member;
 import ssafy.retrip.domain.member.MemberRepository;
@@ -91,22 +91,22 @@ public class RetripService {
 
         // 6. ChatGPT API를 사용하여 여행 설명 생성
         try {
-            ImageAnalysisResponse analysisResponse = chatGptProxyService.getImageAnalysis(memberId, retripId);
+            AnalysisResponse analysisResponse = chatGptProxyService.getImageAnalysis(memberId, retripId);
 
-            if (analysisResponse != null && analysisResponse.getTravel_image_analysis() != null) {
-                ImageAnalysisResponse.TravelAnalysis travelAnalysis =
-                    analysisResponse.getTravel_image_analysis().getTravel_analysis();
-
+            if (analysisResponse != null && analysisResponse.getTravelImageAnalysis() != null) {
+                AnalysisResponse.TravelAnalysis travelAnalysis =
+                    analysisResponse.getTravelImageAnalysis().getTravelAnalysis();
+                
                 if (travelAnalysis != null) {
                     // ReTrip 객체에 분석 결과 저장
                     retrip.setMbti(travelAnalysis.getMbti());
-                    retrip.setOverallMood(travelAnalysis.getOverall_mood());
-
+                    retrip.setOverallMood(travelAnalysis.getOverallMood());
+                    
                     // Top 방문 장소 설정
-                    if (travelAnalysis.getTop_visit_place() != null) {
-                        retrip.setTopVisitPlace(travelAnalysis.getTop_visit_place());
+                    if (travelAnalysis.getTopVisitPlace() != null) {
+                        retrip.setTopVisitPlace(travelAnalysis.getTopVisitPlace());
                     }
-
+                    
                     // 추가 정보는 필요에 따라 설정
                     log.info("이미지 분석 결과 설정 완료: retripId={}", retripId);
                 }
@@ -115,7 +115,6 @@ public class RetripService {
             log.error("이미지 분석 결과 처리 중 오류 발생", e);
         }
 
-        // 7. Retrip 저장
         return retripRepository.save(retrip);
     }
 
