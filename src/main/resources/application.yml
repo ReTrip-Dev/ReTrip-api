@@ -2,7 +2,7 @@ spring:
   profiles:
     default: local
 
-  # 파일 업로드 설정
+  # File Upload Setting
   servlet:
     multipart:
       max-file-size: 10MB
@@ -14,14 +14,18 @@ retrip:
     min-count: 5
     max-count: 30
 
+server:
+  servlet:
+    session:
+      timeout: 60m
+
 ---
 spring:
   # Profile Config
   config:
     activate:
       on-profile: local
-    import:
-      - optional:file:.env
+
   datasource:
     driver-class-name: ${DB_DRIVER_CLASS_NAME}
     url: ${DB_URL}
@@ -33,7 +37,7 @@ spring:
     show-sql: true
     database: mysql
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
     properties:
       hibernate:
         format_sql: true
@@ -62,6 +66,8 @@ spring:
               - name                # 이름
               - profile_nickname    # 닉네임
               - account_email       # 이메일
+
+
   cloud:
     aws:
       credentials:
@@ -74,6 +80,7 @@ spring:
         dir-name: images
       stack:
         auto: false
+
 ---
 spring:
   # Profile Config
@@ -122,6 +129,7 @@ spring:
               - name                # 이름
               - profile_nickname    # 닉네임
               - account_email       # 이메일
+
   cloud:
     aws:
       credentials:
@@ -134,4 +142,3 @@ spring:
         dir-name: test-images
       stack:
         auto: false
-
