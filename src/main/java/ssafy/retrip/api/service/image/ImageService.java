@@ -266,7 +266,6 @@ public class ImageService {
                 // 중요: EXIF의 시간은 이미 로컬 시간이므로 시스템 기본 시간대로 변환하지 않음
                 // ZoneId.systemDefault() 대신 ZoneId.of("UTC")를 사용하여 시간대 변환 문제 방지
                 metadata.takenDate = LocalDateTime.ofInstant(date.toInstant(), ZoneId.of("UTC"));
-                log.info("추출된 촬영 시간(UTC 기준): {}", metadata.takenDate);
             }
         }
     }

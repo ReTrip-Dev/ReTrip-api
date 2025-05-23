@@ -186,9 +186,6 @@ public class RetripService {
     private double calculateTotalDistance(List<Image> images) {
         double totalDistance = 0.0;
 
-        // 시간순으로 정렬
-        images.sort(Comparator.comparing(Image::getTakenDate));
-
         for (int i = 0; i < images.size() - 1; i++) {
             Image current = images.get(i);
             Image next = images.get(i + 1);
