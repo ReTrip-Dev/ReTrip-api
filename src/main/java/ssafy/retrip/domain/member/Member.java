@@ -1,9 +1,13 @@
 package ssafy.retrip.domain.member;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.io.Serial;
 import java.io.Serializable;
 import lombok.AccessLevel;
@@ -14,6 +18,7 @@ import ssafy.retrip.domain.BaseEntity;
 
 @Getter
 @Entity
+@Table(name = "members")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends BaseEntity implements Serializable {
 
@@ -24,16 +29,38 @@ public class Member extends BaseEntity implements Serializable {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private String kakaoId;
+  @Column(unique = true)
+  private String userId;
 
-  private String email;
+  private String password;
+
+  @Column(unique = true)
+  private String kakaoId;
 
   private String nickname;
 
+  @Column(unique = true)
+  private String email;
+
+  @Enumerated(EnumType.STRING)
+  private LoginType loginType;
+
   @Builder
-  private Member(String kakaoId, String email, String nickname) {
+  private Member(String userId, String password, String kakaoId, String nickname, String email,
+      LoginType loginType) {
+    this.userId = userId;
+    this.password = password;
     this.kakaoId = kakaoId;
-    this.email = email;
     this.nickname = nickname;
+    this.email = email;
+    this.loginType = loginType;
+  }
+
+  public boolean isNormalMember() {
+    return this.loginType == LoginType.NORMAL;
+  }
+
+  public boolean isKakaoMember() {
+    return this.loginType == LoginType.KAKAO;
   }
 }
