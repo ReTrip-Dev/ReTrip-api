@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import ssafy.retrip.domain.member.LoginType;
 import ssafy.retrip.domain.member.Member;
 import ssafy.retrip.domain.member.MemberRepository;
 
@@ -21,7 +22,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
   private final MemberRepository memberRepository;
   private final RedirectStrategy redirectStrategy;
 
-  private static final String REDIRECT_URL = "/";
+  private static final String REDIRECT_URL = "http://localhost:5173/photo";
   private static final String SESSION_MEMBER_KEY = "member";
 
   @Override
@@ -49,7 +50,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
           Member m = Member.builder()
               .kakaoId(kakaoId)
               .email(email)
-              .nickname(nickname).build();
+              .nickname(nickname)
+              .loginType(LoginType.KAKAO).build();
+
           return memberRepository.save(m);
         });
   }
