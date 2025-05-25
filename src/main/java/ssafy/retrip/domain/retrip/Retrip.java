@@ -59,6 +59,7 @@ public class Retrip extends BaseEntity {
     private String mbti;                 // 여행 MBTI 성향
     private String overallMood;          // 전반적인 여행 분위기 
     private String topVisitPlace;        // 주요 방문 장소
+    private String personMood;           // 여행 중 사람들의 기분
 
     // Image와의 관계 설정 (양방향)
     @OneToMany(mappedBy = "retrip", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -2,14 +2,13 @@ package ssafy.retrip.api.service.retrip;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ssafy.retrip.api.service.retrip.response.ImageAnalysisResponse;
 import ssafy.retrip.api.service.vision.request.AnalysisResponse;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.member.Member;
@@ -18,15 +17,11 @@ import ssafy.retrip.domain.retrip.Retrip;
 import ssafy.retrip.domain.retrip.RetripRepository;
 import ssafy.retrip.domain.retrip.TimeSlot;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RetripService {
+
     private final RetripRepository retripRepository;
     private final MemberRepository memberRepository;
     private final ChatGptProxyService chatGptProxyService;
@@ -48,9 +43,9 @@ public class RetripService {
         // 카카오 ID로 회원 조회
         Member member = memberRepository.findByKakaoId(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 카카오 ID를 가진 회원이 존재하지 않습니다: " + memberId));
-        
+
         log.info("회원 정보 조회 성공: kakaoId={}, email={}", memberId, member.getEmail());
-        
+
         // 빈 Retrip 객체 생성
         Retrip retrip = Retrip.builder()
                 .member(member) // 회원 설정
@@ -105,20 +100,21 @@ public class RetripService {
                 if (travelAnalysis != null) {
                     // ReTrip 객체에 분석 결과 저장
                     retrip.setMbti(travelAnalysis.getMbti());
-                    retrip.setOverallMood(travelAnalysis.getOverall_mood());
-                    
+                    retrip.setOverallMood(travelAnalysis.getOverallMood());
+                    retrip.setPersonMood(travelAnalysis.getPersonMood());
+
                     // Top 방문 장소 설정
-                    if (travelAnalysis.getTop_visit_place() != null) {
-                        ImageAnalysisResponse.TopVisitPlace topPlace = travelAnalysis.getTop_visit_place();
-                        retrip.setTopVisitPlace(topPlace.getPlace_name());
+                    if (travelAnalysis.getTopVisitPlace() != null) {
+                        AnalysisResponse.TopVisitPlace topPlace = travelAnalysis.getTopVisitPlace();
+                        retrip.setTopVisitPlace(topPlace.getPlaceName());
 
                         // 주요 장소 좌표 정보가 있으면 업데이트
                         if (topPlace.getLatitude() != null && topPlace.getLongitude() != null) {
                             retrip.setMainLocationLat(topPlace.getLatitude());
                             retrip.setMainLocationLng(topPlace.getLongitude());
-                            retrip.setMainLocation(topPlace.getPlace_name());
+                            retrip.setMainLocation(topPlace.getPlaceName());
                             log.info("분석 결과 주요 장소 업데이트: {}, 좌표: {}, {}",
-                                topPlace.getPlace_name(),
+                                topPlace.getPlaceName(),
                                 topPlace.getLatitude(),
                                 topPlace.getLongitude());
                         }
@@ -137,7 +133,7 @@ public class RetripService {
     // 간소화된 시간대 분석 메서드 - 원본 시간 기준
     private TimeSlot analyzeMainTimeSlot(List<Image> images) {
         Map<TimeSlot, Integer> timeSlotCounts = new EnumMap<>(TimeSlot.class);
-        
+
         // 각 시간대별 카운트 초기화
         for (TimeSlot slot : TimeSlot.values()) {
             timeSlotCounts.put(slot, 0);
@@ -145,7 +141,7 @@ public class RetripService {
 
         int processedImages = 0;
         int nullTimeImages = 0;
-        
+
         // 각 이미지에 대해 시간대 분석
         for (Image image : images) {
             LocalDateTime takenDate = image.getTakenDate();
@@ -154,11 +150,11 @@ public class RetripService {
                 TimeSlot slot = TimeSlot.from(takenDate);
                 timeSlotCounts.put(slot, timeSlotCounts.get(slot) + 1);
                 processedImages++;
-                
+
                 // 디버깅을 위한 로그 추가 (최초 10개 이미지만)
                 if (processedImages <= 10) {
-                    log.info("이미지 {}: 시간={}, 시간대={}", 
-                          processedImages - 1, 
+                    log.info("이미지 {}: 시간={}, 시간대={}",
+                          processedImages - 1,
                           takenDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
                           slot);
                 }
@@ -166,7 +162,7 @@ public class RetripService {
                 nullTimeImages++;
             }
         }
-        
+
         // 디버깅을 위한 시간대별 카운트 로그
         log.info("시간대별 이미지 카운트 - 처리된 이미지: {}, 시간 정보 없음: {}", processedImages, nullTimeImages);
         for (TimeSlot slot : TimeSlot.values()) {
@@ -185,7 +181,7 @@ public class RetripService {
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse(TimeSlot.AFTERNOON);
-                
+
         log.info("선택된 주요 시간대: {} (이미지 {}장)", mainSlot, timeSlotCounts.get(mainSlot));
         return mainSlot;
     }
@@ -217,7 +213,7 @@ public class RetripService {
                 Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
                         Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
+        return R * c ;
     }
 
     // 이미지들의 총 이동거리 계산
