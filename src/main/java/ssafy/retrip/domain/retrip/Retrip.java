@@ -1,18 +1,17 @@
 package ssafy.retrip.domain.retrip;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import ssafy.retrip.domain.BaseEntity;
 import ssafy.retrip.domain.image.Image;
+import ssafy.retrip.domain.member.Member;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Setter
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,6 +22,11 @@ public class Retrip extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // Member와의 관계 설정 (N:1)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
     // 여행 총 이동거리 (킬로미터)
     private Double totalDistance;
@@ -50,6 +54,12 @@ public class Retrip extends BaseEntity {
 
     // 여행 이름
     private String name;
+    
+    // ChatGPT 분석 결과 필드 추가
+    private String mbti;                 // 여행 MBTI 성향
+    private String overallMood;          // 전반적인 여행 분위기 
+    private String topVisitPlace;        // 주요 방문 장소
+    private String personMood;           // 여행 중 사람들의 기분
 
     // Image와의 관계 설정 (양방향)
     @OneToMany(mappedBy = "retrip", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -94,6 +104,17 @@ public class Retrip extends BaseEntity {
         this.images.remove(image);
         if (image.getRetrip() == this) {
             image.setRetrip(null);
+        }
+    }
+
+    /**
+     * Member 설정 메서드 (양방향 관계 처리)
+     * @param member 설정할 Member 객체
+     */
+    public void setMember(Member member) {
+        this.member = member;
+        if (member != null && !member.getRetrips().contains(this)) {
+            member.getRetrips().add(this);
         }
     }
 }
