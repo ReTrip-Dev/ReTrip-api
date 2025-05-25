@@ -27,7 +27,7 @@ public class EmailController {
 
   @PostMapping("/verify")
   public ResponseEntity<String> verifySignUpEmailCode(
-      @RequestBody EmailVerificationRequest request) {
+      @Valid @RequestBody EmailVerificationRequest request) {
 
     emailService.verifySignUpEmailCode(request.toServiceRequest());
     return ResponseEntity.ok("success");
