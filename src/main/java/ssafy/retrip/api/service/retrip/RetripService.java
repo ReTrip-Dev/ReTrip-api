@@ -5,13 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ssafy.retrip.api.controller.image.response.ImageResponseDto;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.retrip.Retrip;
 import ssafy.retrip.domain.retrip.RetripRepository;
 import ssafy.retrip.domain.retrip.TimeSlot;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
