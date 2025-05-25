@@ -40,59 +40,64 @@ public class ImageService {
     private final S3Uploader s3Uploader;
     private final ImageRepository imageRepository;
     private final RetripService retripService;
-    
+
     // yml 설정에서 값 주입
     @Value("${retrip.image.min-count}")
     private int minImages;
-    
+
     @Value("${retrip.image.max-count}")
     private int maxImages;
 
     @Transactional
-    public List<ImageResponseDto> uploadImages(List<MultipartFile> images, String dirName) throws IOException {
+    public List<ImageResponseDto> uploadImages(List<MultipartFile> images, String memberId) throws IOException {
         List<ImageResponseDto> uploadedImages = new ArrayList<>();
         List<Image> savedImages = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        
+
         // 이미지 개수 검증
         if (images == null || images.size() < minImages) {
             log.warn("이미지가 {}장 미만입니다. 현재 {}장", minImages, images != null ? images.size() : 0);
             throw new IllegalArgumentException("이미지는 최소 " + minImages + "장 이상 업로드해야 합니다.");
         }
-        
+
         if (images.size() > maxImages) {
             log.warn("이미지가 {}장을 초과했습니다. 처음 {}장만 처리합니다.", maxImages, maxImages);
             images = images.subList(0, maxImages);
         }
-        
+
+        // 1. 빈 Retrip 객체 먼저 생성
+        Retrip retrip = retripService.createEmptyRetrip(memberId);
+        Long retripId = retrip.getId();
+
         for (MultipartFile image : images) {
             try {
                 if (!image.isEmpty()) {
                     // 파일을 로컬에 임시 저장 (HEIC 처리 포함)
                     Optional<File> convertedFile = processAndConvertFile(image);
-                    
+
                     if (convertedFile.isPresent()) {
                         File file = convertedFile.get();
-                        
+
                         // 메타데이터 추출
                         ImageMetadata metadata = extractMetadata(file);
-                        
+
                         // 메타데이터가 없을 경우 기본값 사용
                         if (metadata.takenDate == null) {
                             log.warn("이미지에 촬영 시간 정보가 없습니다: {}. 현재 시간을 사용합니다.", image.getOriginalFilename());
                             metadata.takenDate = LocalDateTime.now();
                         }
-                        
+
                         if (metadata.latitude == null || metadata.longitude == null) {
                             log.warn("이미지에 위치 정보가 없습니다: {}. 가능한 경우 파일명 또는 다른 메타데이터에서 추출합니다.", image.getOriginalFilename());
                             // 파일명에서 위치 정보 추출 시도
                             extractLocationFromFilename(image.getOriginalFilename(), metadata);
                         }
-                        
+
                         // S3에 업로드
+                        String dirName = memberId + "/" + retripId;
                         String storedFileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-                        String imageUrl = s3Uploader.upload(image, dirName);
-                        
+                        String imageUrl = s3Uploader.upload(image, dirName, storedFileName);
+
                         // DB에 이미지 정보 저장
                         Image savedImage = imageRepository.save(Image.builder()
                                 .imageUrl(imageUrl)
@@ -105,11 +110,12 @@ public class ImageService {
                                 .latitude(metadata.latitude)
                                 .longitude(metadata.longitude)
                                 .dirName(dirName)
+                                .retrip(retrip)
                                 .build());
-                        
+
                         savedImages.add(savedImage);
                         uploadedImages.add(ImageResponseDto.from(savedImage));
-                        
+
                         // 임시 파일 삭제
                         try {
                             file.delete();
@@ -123,7 +129,7 @@ public class ImageService {
                 errors.add(image.getOriginalFilename() + ": " + e.getMessage());
             }
         }
-        
+
         if (!errors.isEmpty()) {
             log.warn("일부 이미지 처리 실패: {}", errors);
         }
@@ -132,7 +138,7 @@ public class ImageService {
         // 저장된 이미지가 최소 개수 이상인 경우만 Retrip 생성
         if (savedImages.size() >= minImages) {
             try {
-                Retrip retrip = retripService.createRetrip(savedImages, dirName);
+                retrip = retripService.updateRetripWithImageData(savedImages, retripId, memberId);
                 log.info("Retrip 생성 완료: {}, 이미지 수: {}", retrip.getId(), savedImages.size());
             } catch (Exception e) {
                 log.error("Retrip 생성 중 오류 발생", e);
@@ -142,49 +148,49 @@ public class ImageService {
             // 저장된 이미지가 MIN_IMAGES 미만인 경우 롤백을 위해 예외 발생
             throw new IllegalStateException("저장된 이미지가 " + minImages + "장 미만입니다. 유효한 이미지를 더 업로드해주세요.");
         }
-        
+
         return uploadedImages;
     }
-    
+
     // 파일 처리 및 변환 메소드 - HEIC 파일 처리 포함
     private Optional<File> processAndConvertFile(MultipartFile file) throws IOException {
         String filename = file.getOriginalFilename();
         if (filename == null) {
             return Optional.empty();
         }
-        
+
         // HEIC 파일 처리
-        if (filename.toLowerCase().endsWith(".heic") || 
-            (file.getContentType() != null && file.getContentType().toLowerCase().contains("heic"))) {
+        if (filename.toLowerCase().endsWith(".heic") ||
+                (file.getContentType() != null && file.getContentType().toLowerCase().contains("heic"))) {
             log.info("HEIC 파일 변환 시도: {}", filename);
-            
+
             try {
                 // HEIC 파일을 임시 파일로 저장
                 File tempHeicFile = File.createTempFile("heic_", ".heic");
                 file.transferTo(tempHeicFile);
-                
+
                 // JPEG로 변환 시도 (TwelveMonkeys에 의존)
                 File jpegFile = File.createTempFile("converted_", ".jpg");
-                
+
                 try {
                     // ImageIO를 사용하여 변환 시도
                     BufferedImage image = ImageIO.read(tempHeicFile);
                     if (image != null) {
                         Thumbnails.of(image)
-                            .scale(1.0)
-                            .outputFormat("jpg")
-                            .toFile(jpegFile);
-                        
+                                .scale(1.0)
+                                .outputFormat("jpg")
+                                .toFile(jpegFile);
+
                         tempHeicFile.delete();
                         return Optional.of(jpegFile);
                     }
                 } catch (Exception e) {
                     log.warn("HEIC 변환 실패: {}. 대체 방법 시도", e.getMessage());
-                    
+
                     // 대체 방법: 원본 파일 사용
                     tempHeicFile.delete();
                     jpegFile.delete();
-                    
+
                     // 원본을 JPEG로 간주하고 그대로 처리
                     File standardFile = File.createTempFile("original_", ".jpg");
                     file.transferTo(standardFile);
@@ -194,7 +200,7 @@ public class ImageService {
                 log.error("HEIC 파일 처리 중 오류 발생: {}", e.getMessage());
             }
         }
-        
+
         // 일반 파일 처리 (기존 로직)
         return s3Uploader.convert(file);
     }
@@ -207,7 +213,7 @@ public class ImageService {
             if (parts.length >= 3) {
                 Double lat = Double.parseDouble(parts[parts.length - 2]);
                 Double lng = Double.parseDouble(parts[parts.length - 1].split("\\.")[0]);
-                
+
                 // 유효한 좌표값 확인
                 if (isValidCoordinate(lat, lng)) {
                     metadata.latitude = lat;
@@ -221,29 +227,29 @@ public class ImageService {
     }
 
     private boolean isValidCoordinate(Double lat, Double lng) {
-        return lat != null && lng != null && 
-               lat >= -90 && lat <= 90 && 
-               lng >= -180 && lng <= 180;
+        return lat != null && lng != null &&
+                lat >= -90 && lat <= 90 &&
+                lng >= -180 && lng <= 180;
     }
 
     private ImageMetadata extractMetadata(File imageFile) {
         ImageMetadata metadata = new ImageMetadata();
-        
+
         try {
             Metadata rawMetadata = ImageMetadataReader.readMetadata(imageFile);
-            
+
             // 1. 촬영 시간 추출 - 여러 태그로 시도
             extractDateTimeInfo(rawMetadata, metadata);
-            
+
             // 2. 위치 정보 추출 - GPS 데이터
             extractGpsInfo(rawMetadata, metadata);
-            
+
             // 3. 다른 유용한 메타데이터 추출 (향후 확장)
-            
+
         } catch (ImageProcessingException | IOException e) {
             log.error("이미지 메타데이터 추출 중 오류 발생", e);
         }
-        
+
         return metadata;
     }
 
@@ -253,7 +259,7 @@ public class ImageService {
         if (exifDirectory != null) {
             // 1. 원본 촬영 시간 태그
             Date date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
-            
+
             // 2. 다른 날짜 관련 태그 시도
             if (date == null) {
                 date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME);
@@ -261,7 +267,7 @@ public class ImageService {
             if (date == null) {
                 date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME_DIGITIZED);
             }
-            
+
             if (date != null) {
                 // 중요: EXIF의 시간은 이미 로컬 시간이므로 시스템 기본 시간대로 변환하지 않음
                 // ZoneId.systemDefault() 대신 ZoneId.of("UTC")를 사용하여 시간대 변환 문제 방지
@@ -288,7 +294,7 @@ public class ImageService {
         String location;
         Double latitude;
         Double longitude;
-        
+
         // 메타데이터가 완전한지 확인
         public boolean isComplete() {
             return takenDate != null && latitude != null && longitude != null;
