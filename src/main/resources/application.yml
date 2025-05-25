@@ -67,6 +67,25 @@ spring:
               - profile_nickname    # 닉네임
               - account_email       # 이메일
 
+  # Redis Config
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+
+  # Email
+  mail:
+    host: ${EMAIL_HOST}
+    port: ${EMAIL_PORT}
+    username: ${MAIL_ADDRESS}
+    password: ${APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
   cloud:
     aws:
