@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.retrip.api.service.email.EmailService;
 import ssafy.retrip.api.service.member.request.MemberSignInServiceRequest;
 import ssafy.retrip.api.service.member.request.MemberSignUpServiceRequest;
 import ssafy.retrip.domain.member.Member;
@@ -17,6 +18,7 @@ import ssafy.retrip.global.exception.NicknameAlreadyExistsException;
 @Transactional(readOnly = true)
 public class MemberService {
 
+  private final EmailService emailService;
   private final MemberRepository memberRepository;
   private final BCryptPasswordEncoder passwordEncoder;
 
@@ -47,5 +49,19 @@ public class MemberService {
     if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
       throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
     }
+  }
+
+  public void findForgotUserId(String email) {
+    emailService.findForgotUserId(email);
+  }
+
+  public void findForgotUserPw() {
+  }
+
+  public String getForgotUserId(String email) {
+    Member member = memberRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+    return member.getUserId();
   }
 }
