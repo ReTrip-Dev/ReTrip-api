@@ -29,7 +29,7 @@ public class EmailController {
   public ResponseEntity<String> verifySignUpEmailCode(
       @Valid @RequestBody EmailVerificationRequest request) {
 
-    emailService.verifySignUpEmailCode(request.toServiceRequest());
+    emailService.verifyEmailCode(request.toServiceRequest());
     return ResponseEntity.ok("success");
   }
 }

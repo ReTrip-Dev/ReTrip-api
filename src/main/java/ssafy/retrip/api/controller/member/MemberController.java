@@ -14,6 +14,8 @@ import ssafy.retrip.api.controller.email.request.EmailRequest;
 import ssafy.retrip.api.controller.email.request.EmailVerificationRequest;
 import ssafy.retrip.api.controller.member.request.MemberSignInRequest;
 import ssafy.retrip.api.controller.member.request.MemberSignUpRequest;
+import ssafy.retrip.api.controller.member.request.PasswordFindRequest;
+import ssafy.retrip.api.controller.member.request.PasswordResetRequest;
 import ssafy.retrip.api.service.email.EmailService;
 import ssafy.retrip.api.service.member.MemberService;
 
@@ -51,20 +53,23 @@ public class MemberController {
   }
 
   @PostMapping("/find-id")
-  public ResponseEntity<String> find(@Valid @RequestBody EmailVerificationRequest request) {
-    emailService.verifySignUpEmailCode(request.toServiceRequest());
+  public ResponseEntity<String> findUserId(@Valid @RequestBody EmailVerificationRequest request) {
+    emailService.verifyEmailCode(request.toServiceRequest());
     String forgotUserId = memberService.getForgotUserId(request.getEmail());
     return ResponseEntity.ok(forgotUserId);
   }
 
-
-  // TODO: 비밀번호 찾기
-  @PostMapping("/find-pw")
-  public ResponseEntity<String> findUserPw() {
-
-    memberService.findForgotUserPw();
-
+  @PostMapping("/password/verify-credentials")
+  public ResponseEntity<String> verifyPasswordResetCredentials(
+      @Valid @RequestBody PasswordFindRequest request) {
+    memberService.verifyPasswordResetCredentials(request.toServiceRequest());
     return ResponseEntity.ok("success");
+  }
+
+  @PostMapping("/password/reset")
+  public ResponseEntity<String> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+    memberService.resetPassword(request.toServiceRequest());
+    return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
   }
 
   // TODO: 회원 리트립 히스토리 조회

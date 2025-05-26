@@ -37,14 +37,15 @@ public class Member extends BaseEntity implements Serializable {
   private String nickname;
 
   // Retrip과의 관계 설정 (1:N)
-  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<Retrip> retrips = new ArrayList<>();
 
   @Column(unique = true)
   private String email;
 
   @Enumerated(EnumType.STRING)
   private LoginType loginType;
+
+  @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Retrip> retrips = new ArrayList<>();
 
   @Builder
   private Member(String userId, String password, String kakaoId, String nickname, String email,
@@ -75,5 +76,9 @@ public class Member extends BaseEntity implements Serializable {
 
   public boolean isKakaoMember() {
     return this.loginType == LoginType.KAKAO;
+  }
+
+  public void updatePassword(String newPassword) {
+    this.password = newPassword;
   }
 }

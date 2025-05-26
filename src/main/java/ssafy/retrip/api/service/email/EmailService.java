@@ -64,7 +64,7 @@ public class EmailService {
     valOperations.set(userEmail, code, 180, TimeUnit.SECONDS);
   }
 
-  public void verifySignUpEmailCode(EmailVerificationServiceRequest request) {
+  public void verifyEmailCode(EmailVerificationServiceRequest request) {
     ValueOperations<String, String> valOperations = redisTemplate.opsForValue();
     String code = valOperations.get(request.getEmail());
     if (!StringUtils.equals(code, request.getCode())) {
