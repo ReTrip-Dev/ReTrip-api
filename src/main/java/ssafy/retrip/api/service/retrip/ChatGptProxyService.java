@@ -22,21 +22,15 @@ public class ChatGptProxyService {
   @Value("${chatgpt.proxy.url}")
   private String proxyUrl;
 
-  /**
-   * ChatGPT 중계서버에 요청을 보내 여행 이미지 분석 결과를 받아오는 메서드
-   *
-   * @param memberId 회원 ID
-   * @param retripId Retrip ID
-   * @return 이미지 분석 결과
-   */
-  public AnalysisResponse getImageAnalysis(String memberId, Long retripId) {
-    log.info("ChatGPT 중계서버 요청 시작: memberId={}, retripId={}", memberId, retripId);
+  public AnalysisResponse getImageAnalysis(ImageAnalysisRequest requestBody) {
 
-    // 요청 본문 데이터 설정
-    ImageAnalysisRequest requestBody = new ImageAnalysisRequest(memberId, retripId);
+    log.info("memberId: {}, retripId: {}, mainLocationLat: {}, mainLocationLng: {}",
+        requestBody.getMemberId(), requestBody.getRetripId(),
+        requestBody.getMainLocationLat(), requestBody.getMainLocationLng());
+
+    log.info("ChatGPT 중계서버 요청 시작");
 
     try {
-      // 응답 디버깅을 위해 먼저 문자열로 받습니다
       String responseString = restClient.post()
           .uri(proxyUrl)
           .contentType(MediaType.APPLICATION_JSON)
@@ -46,9 +40,7 @@ public class ChatGptProxyService {
 
       log.info("중계서버 응답: {}", responseString);
 
-      // 응답이 정상적으로 수신되었으면 객체로 변환
       if (responseString != null) {
-        // Jackson ObjectMapper를 사용하여 수동 변환
         AnalysisResponse response = objectMapper.readValue(responseString, AnalysisResponse.class);
         log.info("ChatGPT 중계서버 응답 수신 성공");
         return response;
