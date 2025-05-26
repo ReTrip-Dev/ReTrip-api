@@ -33,10 +33,20 @@ public class EmailService {
                      + "<h3 style='color: " + "var(--main-color)" + ";'>" + code + "</h3>"
                      + "<p>인증번호는 3분간 유효합니다.</p>"
                      + "<p>감사합니다.</p>";
-    sendSignUpEmailCode(userEmail, title, content, code);
+    sendEmailCode(userEmail, title, content, code);
   }
 
-  private void sendSignUpEmailCode(String userEmail, String title, String content, String code) {
+  public void findForgotUserId(String userEmail) {
+    String code = createRandomCode();
+    String title = "[ReTrip] 아이디 찾기 이메일 인증번호 발송";
+    String content = "<p>ReTrip 아이디 찾기를 위한 인증번호입니다.</p>"
+                     + "<h3 style='color: " + "var(--main-color)" + ";'>" + code + "</h3>"
+                     + "<p>인증번호는 3분간 유효합니다.</p>"
+                     + "<p>감사합니다.</p>";
+    sendEmailCode(userEmail, title, content, code);
+  }
+
+  private void sendEmailCode(String userEmail, String title, String content, String code) {
 
     MimeMessage message = mailSender.createMimeMessage();
     try {
@@ -54,7 +64,7 @@ public class EmailService {
     valOperations.set(userEmail, code, 180, TimeUnit.SECONDS);
   }
 
-  public void verifySignUpEmailCode(EmailVerificationServiceRequest request) {
+  public void verifyEmailCode(EmailVerificationServiceRequest request) {
     ValueOperations<String, String> valOperations = redisTemplate.opsForValue();
     String code = valOperations.get(request.getEmail());
     if (!StringUtils.equals(code, request.getCode())) {
