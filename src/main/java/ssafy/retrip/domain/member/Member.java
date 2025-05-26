@@ -55,6 +55,7 @@ public class Member extends BaseEntity implements Serializable {
     this.kakaoId = kakaoId;
     this.email = email;
     this.nickname = nickname;
+    this.loginType = loginType;
     this.retrips = new ArrayList<>();
   }
 
