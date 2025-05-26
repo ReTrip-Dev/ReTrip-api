@@ -3,7 +3,6 @@ package ssafy.retrip.api.service.vision.request;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import java.util.List;
-import java.util.Map;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,52 +17,47 @@ public class AnalysisResponse {
 
   @Getter
   @NoArgsConstructor
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public static class FailedImageInfo {
-
     private String id;
     private String reason;
   }
 
   @Getter
   @NoArgsConstructor
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
   public static class TravelImageAnalysis {
-
-    private TravelAnalysis travelAnalysis;
+    private User user;
+    private TripSummary tripSummary;
+    private PhotoStats photoStats;
+    private List<Recommendation> recommendations;
   }
 
   @Getter
   @NoArgsConstructor
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-  public static class TravelAnalysis {
-
+  public static class User {
+    private String countryCode;
     private String mbti;
-    private String overallMood;
-    private String personMood;
-    private Map<String, String> photoCategoryRatio;
-    private List<TopSubject> top5Subjects;
-    private List<String> topRecommendPlace;
-    private TopVisitPlace topVisitPlace;
   }
 
   @Getter
   @NoArgsConstructor
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-  public static class TopSubject {
-
-    private int count;
-    private String subject;
+  public static class TripSummary {
+    private String summaryLine;
+    private List<String> keywords;
+    private String hashtag;
   }
 
   @Getter
   @NoArgsConstructor
-  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-  public static class TopVisitPlace {
+  public static class PhotoStats {
+    private List<String> favoriteSubjects;
+    private String favoritePhotoSpot;
+  }
 
-    // 실제 JSON 응답과 일치하도록 필드명 수정
-    private Double latitude;
-    private Double longitude;
-    private String placeName;
+  @Getter
+  @NoArgsConstructor
+  public static class Recommendation {
+    private String emoji;
+    private String place;
+    private String description;
   }
 }

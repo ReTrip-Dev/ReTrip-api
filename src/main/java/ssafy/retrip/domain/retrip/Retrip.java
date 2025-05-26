@@ -49,17 +49,39 @@ public class Retrip extends BaseEntity {
     // 총 이미지 개수
     private Integer imageCount;
 
-    // 여행 설명 (ChatGPT API로 생성 가능)
-    private String description;
-
     // 여행 이름
     private String name;
     
-    // ChatGPT 분석 결과 필드 추가
-    private String mbti;                 // 여행 MBTI 성향
-    private String overallMood;          // 전반적인 여행 분위기 
-    private String topVisitPlace;        // 주요 방문 장소
-    private String personMood;           // 여행 중 사람들의 기분
+    // ChatGPT 분석 결과 필드 - 새 JSON 구조에 맞게 수정
+    // User 정보
+    private String countryCode;   // 방문한 국가의 ISO 코드
+    private String mbti;          // 사용자의 여행 스타일 MBTI
+    
+    // TripSummary 정보
+    private String summaryLine;   // 여행 한 줄 요약(20자 이내)
+    
+    @ElementCollection
+    @CollectionTable(name = "retrip_keywords", joinColumns = @JoinColumn(name = "retrip_id"))
+    @Column(name = "keyword")
+    private List<String> keywords = new ArrayList<>();  // 여행 키워드 3개
+    
+    private String hashtag;       // 단일 단어 해시태그
+    
+    // PhotoStats 정보
+    @ElementCollection
+    @CollectionTable(name = "retrip_favorite_subjects", joinColumns = @JoinColumn(name = "retrip_id"))
+    @Column(name = "subject")
+    private List<String> favoriteSubjects = new ArrayList<>();  // 피사체 이모지 3개
+    
+    private String favoritePhotoSpot;  // 가장 많이 촬영된 장소명
+    
+    // Recommendations 정보 (별도 테이블로 저장)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "retrip_id")
+    private List<RecommendationPlace> recommendations = new ArrayList<>();
+
+    // 여행 설명 (ChatGPT API로 생성 가능)
+    private String description;
 
     // Image와의 관계 설정 (양방향)
     @OneToMany(mappedBy = "retrip", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -116,5 +138,13 @@ public class Retrip extends BaseEntity {
         if (member != null && !member.getRetrips().contains(this)) {
             member.getRetrips().add(this);
         }
+    }
+    
+    /**
+     * 추천 장소 추가 메서드
+     * @param recommendation 추가할 추천 장소
+     */
+    public void addRecommendation(RecommendationPlace recommendation) {
+        this.recommendations.add(recommendation);
     }
 }
