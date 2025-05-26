@@ -51,7 +51,7 @@ public class MemberService {
     }
   }
 
-  public void findForgotUserId(String email) {
+  public void sendVerificationCode(String email) {
     emailService.findForgotUserId(email);
   }
 

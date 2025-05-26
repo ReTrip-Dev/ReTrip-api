@@ -44,9 +44,9 @@ public class MemberController {
     return ResponseEntity.ok("사용 가능한 아이디입니다.");
   }
 
-  @PostMapping("/find-id/send-code")
-  public ResponseEntity<String> findForgetUserId(@Valid @RequestBody EmailRequest request) {
-    memberService.findForgotUserId(request.getEmail());
+  @PostMapping("/send-verification-code")
+  public ResponseEntity<String> sendVerificationCode(@Valid @RequestBody EmailRequest request) {
+    memberService.sendVerificationCode(request.getEmail());
     return ResponseEntity.ok("success");
   }
 
