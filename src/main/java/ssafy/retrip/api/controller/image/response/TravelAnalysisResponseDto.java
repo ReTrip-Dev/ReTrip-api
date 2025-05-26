@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import ssafy.retrip.api.service.vision.request.AnalysisResponse.TravelImageAnalysis;
+import ssafy.retrip.api.service.vision.response.AnalysisResponse.TravelImageAnalysis;
 import ssafy.retrip.domain.retrip.Retrip;
 import ssafy.retrip.domain.retrip.TimeSlot;
 

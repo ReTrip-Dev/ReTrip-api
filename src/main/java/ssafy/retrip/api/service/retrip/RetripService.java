@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.retrip.api.service.retrip.request.ImageAnalysisRequest;
-import ssafy.retrip.api.service.vision.request.AnalysisResponse;
+import ssafy.retrip.api.service.vision.response.AnalysisResponse;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.member.Member;
 import ssafy.retrip.domain.member.MemberRepository;

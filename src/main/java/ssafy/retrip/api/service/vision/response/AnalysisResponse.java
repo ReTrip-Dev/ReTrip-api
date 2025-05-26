@@ -1,4 +1,4 @@
-package ssafy.retrip.api.service.vision.request;
+package ssafy.retrip.api.service.vision.response;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
