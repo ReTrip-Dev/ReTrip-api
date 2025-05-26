@@ -81,6 +81,7 @@ public class MemberService {
     }
   }
 
+  @Transactional
   public void resetPassword(PasswordResetServiceRequest request) {
     Member member = memberRepository.findByEmail(request.getEmail()).orElseThrow(
         () -> new IllegalArgumentException("존재하지 않는 회원입니다.")
