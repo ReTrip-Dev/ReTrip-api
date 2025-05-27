@@ -9,12 +9,13 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import ssafy.retrip.domain.BaseEntity;
 
 @Getter
 @Entity
 @Table(name = "retrip_reports")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RetripReport {
+public class RetripReport extends BaseEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
