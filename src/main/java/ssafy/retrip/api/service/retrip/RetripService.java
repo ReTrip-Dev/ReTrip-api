@@ -9,9 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.retrip.api.controller.image.response.TravelAnalysisResponseDto;
 import ssafy.retrip.api.service.retrip.request.ImageAnalysisRequest;
 import ssafy.retrip.api.service.vision.response.AnalysisResponse;
 import ssafy.retrip.domain.image.Image;
+import ssafy.retrip.domain.member.LoginType;
 import ssafy.retrip.domain.member.Member;
 import ssafy.retrip.domain.member.MemberRepository;
 import ssafy.retrip.domain.retrip.RecommendationPlace;
@@ -28,7 +30,6 @@ public class RetripService {
     private final MemberRepository memberRepository;
     private final ChatGptProxyService chatGptProxyService;
 
-    // yml 설정에서 값 주입
     @Value("${retrip.image.min-count}")
     private int minImages;
 
@@ -42,13 +43,11 @@ public class RetripService {
      */
     @Transactional
     public Retrip createEmptyRetrip(String memberId) {
-        // 카카오 ID로 회원 조회
         Member member = memberRepository.findByKakaoId(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 카카오 ID를 가진 회원이 존재하지 않습니다: " + memberId));
 
         log.info("회원 정보 조회 성공: kakaoId={}, email={}", memberId, member.getEmail());
 
-        // 빈 Retrip 객체 생성
         Retrip retrip = Retrip.builder()
                 .member(member) // 회원 설정
                 .startDate(LocalDateTime.now())
@@ -56,16 +55,11 @@ public class RetripService {
                 .imageCount(0)
                 .build();
 
-        // Retrip 저장
-        Retrip savedRetrip = retripRepository.save(retrip);
-        log.info("빈 Retrip 생성 완료: retripId={}, memberId={}", savedRetrip.getId(), member.getId());
-
-        return savedRetrip;
+      return retripRepository.save(retrip);
     }
 
-    // 다른 서비스에서 호출 가능하도록 public으로 변경
     @Transactional
-    public Retrip updateRetripWithImageData(List<Image> images, long retripId, String memberId) {
+    public TravelAnalysisResponseDto updateRetripWithImageData(List<Image> images, long retripId, String memberId) {
         Retrip retrip = retripRepository.findById(retripId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ReTrip이 존재하지 않습니다. ID: " + retripId));
 
@@ -104,7 +98,7 @@ public class RetripService {
 
             if (analysisResponse != null && analysisResponse.getTravelImageAnalysis() != null) {
                 AnalysisResponse.TravelImageAnalysis travelImageAnalysis = analysisResponse.getTravelImageAnalysis();
-                
+
                 // User 정보 설정
                 if (travelImageAnalysis.getUser() != null) {
                     AnalysisResponse.User user = travelImageAnalysis.getUser();
@@ -127,7 +121,7 @@ public class RetripService {
                         retrip.getKeywords().clear();
                         retrip.getKeywords().addAll(tripSummary.getKeywords());
                     }
-                    
+
                     log.info("TripSummary 정보 설정 완료: summaryLine={}, hashtag={}, keywords={}",
                         tripSummary.getSummaryLine(), tripSummary.getHashtag(), tripSummary.getKeywords());
                 }
@@ -145,49 +139,58 @@ public class RetripService {
                         retrip.getFavoriteSubjects().clear();
                         retrip.getFavoriteSubjects().addAll(photoStats.getFavoriteSubjects());
                     }
-                    
+
                     log.info("PhotoStats 정보 설정 완료: favoritePhotoSpot={}, favoriteSubjects={}",
                         photoStats.getFavoritePhotoSpot(), photoStats.getFavoriteSubjects());
                 }
-                
+
                 // 기존 추천 장소 정보 제거
                 if (retrip.getRecommendations() == null) {
                     retrip.setRecommendations(new ArrayList<>());
                 }
                 retrip.getRecommendations().clear();
-                
+
                 // Recommendations 정보 설정
                 if (travelImageAnalysis.getRecommendations() != null) {
                     List<AnalysisResponse.Recommendation> recommendations = travelImageAnalysis.getRecommendations();
-                    
+
                     for (AnalysisResponse.Recommendation rec : recommendations) {
                         RecommendationPlace recommendationPlace = RecommendationPlace.builder()
                             .emoji(rec.getEmoji())
                             .place(rec.getPlace())
                             .description(rec.getDescription())
                             .build();
-                        
+
                         retrip.addRecommendation(recommendationPlace);
                     }
-                    
+
                     log.info("추천 장소 {} 개 설정 완료", recommendations.size());
                 }
 
                 // 여행 이름을 summaryLine으로 설정
-                if (travelImageAnalysis.getTripSummary() != null && 
+                if (travelImageAnalysis.getTripSummary() != null &&
                     travelImageAnalysis.getTripSummary().getSummaryLine() != null) {
                     retrip.setName(travelImageAnalysis.getTripSummary().getSummaryLine());
                 } else {
                     retrip.setName(generateTripName(null, retrip.getStartDate()));
                 }
-                
+
                 log.info("이미지 분석 결과 설정 완료: retripId={}", retripId);
             }
+            Member member = memberRepository.findByKakaoId(memberId).orElseThrow(
+                () -> new IllegalArgumentException("Member not found with id: " + memberId)
+            );
+
+            String username = member.getLoginType() == LoginType.KAKAO
+                ? member.getNickname() : member.getUserId();
+            Retrip savedRetrip = retripRepository.save(retrip);
+
+            return TravelAnalysisResponseDto.from(
+                savedRetrip.getId(), analysisResponse.getTravelImageAnalysis(), savedRetrip, username);
         } catch (Exception e) {
             log.error("이미지 분석 결과 처리 중 오류 발생", e);
+            throw new IllegalStateException("이미지 분석 중 오류가 발생했습니다: " + e.getMessage());
         }
-
-        return retripRepository.save(retrip);
     }
 
     // 간소화된 시간대 분석 메서드 - 원본 시간 기준
@@ -246,14 +249,12 @@ public class RetripService {
         return mainSlot;
     }
 
-    //TODO CHATGPT API를 사용하여 해당 위도와 경도가 어디에서 찍은 사진인지 판단하고 name을 받아오게
     private String getLocationName(double latitude, double longitude) {
         // 여기서는 단순히 좌표를 문자열로 반환
         // TO-DO CHATGPT API를 사용하여 해당 위도와 경도가 어디에서 찍은 사진인지 판단하고 name을 받아오게
         return String.format("위도 %.4f, 경도 %.4f 부근", latitude, longitude);
     }
 
-    //TODO CHATGPT API를 사용하여 해당 여행의 이름 생성(비전 API 사용)
     private String generateTripName(String dirName, LocalDateTime startDate) {
         String dateStr = startDate.format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일"));
 

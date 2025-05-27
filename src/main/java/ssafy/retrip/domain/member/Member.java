@@ -36,8 +36,6 @@ public class Member extends BaseEntity implements Serializable {
 
   private String nickname;
 
-  // Retrip과의 관계 설정 (1:N)
-
   @Column(unique = true)
   private String email;
 
@@ -55,6 +53,7 @@ public class Member extends BaseEntity implements Serializable {
     this.kakaoId = kakaoId;
     this.email = email;
     this.nickname = nickname;
+    this.loginType = loginType;
     this.retrips = new ArrayList<>();
   }
 

@@ -3,6 +3,7 @@ package ssafy.retrip.api.controller.image;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,50 +12,53 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import ssafy.retrip.api.controller.image.response.ImageResponseDto;
 import ssafy.retrip.api.controller.image.response.TravelAnalysisResponseDto;
 import ssafy.retrip.api.service.image.ImageService;
-import ssafy.retrip.domain.retrip.Retrip;
+import ssafy.retrip.api.service.retrip.RetripService;
+import ssafy.retrip.api.service.retripReport.RetripReportService;
+import ssafy.retrip.aws.S3Uploader;
+import ssafy.retrip.domain.member.MemberRepository;
 
 @RestController
-@RequestMapping("/api/images")
 @RequiredArgsConstructor
+@RequestMapping("/api/images")
 public class ImageController {
 
-    private final ImageService imageService;
+  private final S3Uploader s3Uploader;
+  private final ImageService imageService;
+  private final RetripService retripService;
+  private final MemberRepository memberRepository;
+  private final RetripReportService retripReportService;
 
-    @PostMapping("/uploads")
-    public ResponseEntity<List<ImageResponseDto>> uploadMultipleImages(HttpServletRequest request,
-            @RequestParam("images") List<MultipartFile> images) throws IOException {
-        //HttpSession session = request.getSession();
-        //String memberId = String.valueOf(session.getAttribute("member"));
-        String memberId = "4277332119";
+  @PostMapping("/uploads")
+  public ResponseEntity<TravelAnalysisResponseDto> uploadMultipleImages(HttpServletRequest request,
+      @RequestParam("images") List<MultipartFile> images) throws IOException {
+    //HttpSession session = request.getSession();
+    //String memberId = String.valueOf(session.getAttribute("member"));
+    String memberId = "4268383655";
 
-        try {
-            System.out.println("✅ 업로드 시작, 파일 수: " + images.size());
-            List<ImageResponseDto> uploadedImages = imageService.uploadImages(images, memberId);
-            return ResponseEntity.ok(uploadedImages);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-        //TODO 아래와 같은 예시로 변경해주시면 됩니다.
-
-//        try {
-//            List<ImageResponseDto> uploadedImages = imageService.uploadImages(images, memberId);
-//
-//            // 분석 데이터와 Retrip 객체 가져오기
-//            Retrip retrip = retripService.getLatestRetripByMemberId(memberId);
-//            TravelImageAnalysis analysis = retripService.getTravelAnalysis(retrip.getId());
-//
-//            // 응답 DTO 생성
-//            TravelAnalysisResponseDto responseDto = TravelAnalysisResponseDto.from(analysis, retrip, username);
-//            return ResponseEntity.ok(responseDto);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
-
-
+    try {
+      return ResponseEntity.ok(imageService.uploadImages(images, memberId));
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
+  }
+
+  @PostMapping("/retrip")
+  public ResponseEntity<String> uploadRetripImage(HttpServletRequest request,
+      @RequestParam("image") MultipartFile image,
+      @RequestParam("retripId") String retripId) throws IOException {
+
+    //HttpSession session = request.getSession();
+    //String memberId = String.valueOf(session.getAttribute("member"));
+    String memberId = "4268383655";
+    String dirName = "retrip/" + memberId + "/" + retripId;
+    String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
+
+    String uploadUrl = s3Uploader.upload(image, dirName, fileName);
+    retripReportService.saveReportImage(memberId, uploadUrl);
+
+    return ResponseEntity.ok("success");
+  }
 }
