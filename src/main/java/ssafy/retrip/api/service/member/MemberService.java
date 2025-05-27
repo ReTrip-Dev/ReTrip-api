@@ -2,6 +2,7 @@ package ssafy.retrip.api.service.member;
 
 import static ssafy.retrip.domain.member.LoginType.NORMAL;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,8 +14,11 @@ import ssafy.retrip.api.service.member.request.MemberSignInServiceRequest;
 import ssafy.retrip.api.service.member.request.MemberSignUpServiceRequest;
 import ssafy.retrip.api.service.member.request.PasswordFindServiceRequest;
 import ssafy.retrip.api.service.member.request.PasswordResetServiceRequest;
+import ssafy.retrip.api.service.retrip.response.ImageUrlResponse;
 import ssafy.retrip.domain.member.Member;
 import ssafy.retrip.domain.member.MemberRepository;
+import ssafy.retrip.domain.retripReport.RetripReport;
+import ssafy.retrip.domain.retripReport.RetripReportRepository;
 import ssafy.retrip.global.exception.NicknameAlreadyExistsException;
 
 @Service
@@ -25,6 +29,7 @@ public class MemberService {
   private final EmailService emailService;
   private final MemberRepository memberRepository;
   private final BCryptPasswordEncoder passwordEncoder;
+  private final RetripReportRepository retripReportRepository;
 
   @Transactional
   public void signup(MemberSignUpServiceRequest request) {
@@ -89,5 +94,17 @@ public class MemberService {
 
     String encodedPassword = passwordEncoder.encode(request.getNewPassword());
     member.updatePassword(encodedPassword);
+  }
+
+  public List<ImageUrlResponse> getRetripHistoryByMemberId(String memberId) {
+
+    List<RetripReport> retripReports = retripReportRepository.findByMemberId(memberId).orElseThrow(
+        () -> new IllegalStateException("해당 회원의 Retrip 히스토리가 없습니다.")
+    );
+
+    return retripReports.stream()
+        .map(report -> ImageUrlResponse.builder()
+            .imageUrl(report.getImageUrl())
+            .build()).toList();
   }
 }
