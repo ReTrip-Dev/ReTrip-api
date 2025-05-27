@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import ssafy.retrip.api.controller.image.response.TravelAnalysisResponseDto;
 import ssafy.retrip.aws.S3Uploader;
 import ssafy.retrip.api.controller.image.response.ImageResponseDto;
 import ssafy.retrip.api.service.retrip.RetripService;
@@ -49,12 +50,11 @@ public class ImageService {
     private int maxImages;
 
     @Transactional
-    public List<ImageResponseDto> uploadImages(List<MultipartFile> images, String memberId) throws IOException {
+    public TravelAnalysisResponseDto uploadImages(List<MultipartFile> images, String memberId) throws IOException {
         List<ImageResponseDto> uploadedImages = new ArrayList<>();
         List<Image> savedImages = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
-        // 이미지 개수 검증
         if (images == null || images.size() < minImages) {
             log.warn("이미지가 {}장 미만입니다. 현재 {}장", minImages, images != null ? images.size() : 0);
             throw new IllegalArgumentException("이미지는 최소 " + minImages + "장 이상 업로드해야 합니다.");
@@ -65,23 +65,17 @@ public class ImageService {
             images = images.subList(0, maxImages);
         }
 
-        // 1. 빈 Retrip 객체 먼저 생성
         Retrip retrip = retripService.createEmptyRetrip(memberId);
         Long retripId = retrip.getId();
 
         for (MultipartFile image : images) {
             try {
                 if (!image.isEmpty()) {
-                    // 파일을 로컬에 임시 저장 (HEIC 처리 포함)
                     Optional<File> convertedFile = processAndConvertFile(image);
-
                     if (convertedFile.isPresent()) {
                         File file = convertedFile.get();
-
-                        // 메타데이터 추출
                         ImageMetadata metadata = extractMetadata(file);
 
-                        // 메타데이터가 없을 경우 기본값 사용
                         if (metadata.takenDate == null) {
                             log.warn("이미지에 촬영 시간 정보가 없습니다: {}. 현재 시간을 사용합니다.", image.getOriginalFilename());
                             metadata.takenDate = LocalDateTime.now();
@@ -89,16 +83,13 @@ public class ImageService {
 
                         if (metadata.latitude == null || metadata.longitude == null) {
                             log.warn("이미지에 위치 정보가 없습니다: {}. 가능한 경우 파일명 또는 다른 메타데이터에서 추출합니다.", image.getOriginalFilename());
-                            // 파일명에서 위치 정보 추출 시도
                             extractLocationFromFilename(image.getOriginalFilename(), metadata);
                         }
 
-                        // S3에 업로드
                         String dirName = memberId + "/" + retripId;
                         String storedFileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
                         String imageUrl = s3Uploader.upload(image, dirName, storedFileName);
 
-                        // DB에 이미지 정보 저장
                         Image savedImage = imageRepository.save(Image.builder()
                                 .imageUrl(imageUrl)
                                 .originalFileName(image.getOriginalFilename())
@@ -134,22 +125,19 @@ public class ImageService {
             log.warn("일부 이미지 처리 실패: {}", errors);
         }
 
-
-        // 저장된 이미지가 최소 개수 이상인 경우만 Retrip 생성
         if (savedImages.size() >= minImages) {
             try {
-                retrip = retripService.updateRetripWithImageData(savedImages, retripId, memberId);
-                log.info("Retrip 생성 완료: {}, 이미지 수: {}", retrip.getId(), savedImages.size());
+              return retripService.updateRetripWithImageData(
+                  savedImages, retripId, memberId);
             } catch (Exception e) {
                 log.error("Retrip 생성 중 오류 발생", e);
+                throw new IllegalStateException("Retrip 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
             }
         } else {
             log.warn("저장된 이미지가 {}장 미만으로 Retrip을 생성하지 않습니다. 이미지 수: {}", minImages, savedImages.size());
             // 저장된 이미지가 MIN_IMAGES 미만인 경우 롤백을 위해 예외 발생
             throw new IllegalStateException("저장된 이미지가 " + minImages + "장 미만입니다. 유효한 이미지를 더 업로드해주세요.");
         }
-
-        return uploadedImages;
     }
 
     // 파일 처리 및 변환 메소드 - HEIC 파일 처리 포함
