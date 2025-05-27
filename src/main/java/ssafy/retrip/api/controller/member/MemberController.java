@@ -1,10 +1,10 @@
 package ssafy.retrip.api.controller.member;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +18,7 @@ import ssafy.retrip.api.controller.member.request.PasswordFindRequest;
 import ssafy.retrip.api.controller.member.request.PasswordResetRequest;
 import ssafy.retrip.api.service.email.EmailService;
 import ssafy.retrip.api.service.member.MemberService;
+import ssafy.retrip.api.service.retrip.response.ImageUrlResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -72,9 +73,12 @@ public class MemberController {
     return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
   }
 
-  // TODO: 회원 리트립 히스토리 조회
-  @GetMapping("/history/{memberId}")
-  public void getHistory(@PathVariable Long memberId) {
+  @GetMapping("/history")
+  public ResponseEntity<List<ImageUrlResponse>> getRetripHistoryByMemberId() {
 
+    String memberId = "4268383655";
+    List<ImageUrlResponse> responses = memberService.getRetripHistoryByMemberId(memberId);
+
+    return ResponseEntity.ok(responses);
   }
 }
