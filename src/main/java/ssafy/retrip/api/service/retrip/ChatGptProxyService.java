@@ -8,7 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ssafy.retrip.api.service.retrip.request.ImageAnalysisRequest;
-import ssafy.retrip.api.service.vision.request.AnalysisResponse;
+import ssafy.retrip.api.service.vision.response.AnalysisResponse;
 
 @Slf4j
 @Service

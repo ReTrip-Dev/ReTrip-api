@@ -10,10 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.retrip.api.service.retrip.request.ImageAnalysisRequest;
-import ssafy.retrip.api.service.vision.request.AnalysisResponse;
+import ssafy.retrip.api.service.vision.response.AnalysisResponse;
 import ssafy.retrip.domain.image.Image;
 import ssafy.retrip.domain.member.Member;
 import ssafy.retrip.domain.member.MemberRepository;
+import ssafy.retrip.domain.retrip.RecommendationPlace;
 import ssafy.retrip.domain.retrip.Retrip;
 import ssafy.retrip.domain.retrip.RetripRepository;
 import ssafy.retrip.domain.retrip.TimeSlot;
@@ -90,7 +91,7 @@ public class RetripService {
         // 5. 이미지 카운트
         retrip.setImageCount(images.size());
 
-        // 6. ChatGPT API를 사용하여 여행 설명 생성
+        // 6. ChatGPT API를 사용하여 여행 분석 결과 저장
         try {
             ImageAnalysisRequest request = ImageAnalysisRequest.builder()
                 .memberId(memberId)
@@ -102,34 +103,85 @@ public class RetripService {
             AnalysisResponse analysisResponse = chatGptProxyService.getImageAnalysis(request);
 
             if (analysisResponse != null && analysisResponse.getTravelImageAnalysis() != null) {
-                AnalysisResponse.TravelAnalysis travelAnalysis =
-                    analysisResponse.getTravelImageAnalysis().getTravelAnalysis();
-
-                if (travelAnalysis != null) {
-                    // ReTrip 객체에 분석 결과 저장
-                    retrip.setMbti(travelAnalysis.getMbti());
-                    retrip.setOverallMood(travelAnalysis.getOverallMood());
-                    retrip.setPersonMood(travelAnalysis.getPersonMood());
-
-                    // Top 방문 장소 설정
-                    if (travelAnalysis.getTopVisitPlace() != null) {
-                        AnalysisResponse.TopVisitPlace topPlace = travelAnalysis.getTopVisitPlace();
-                        retrip.setTopVisitPlace(topPlace.getPlaceName());
-
-                        // 주요 장소 좌표 정보가 있으면 업데이트
-                        if (topPlace.getLatitude() != null && topPlace.getLongitude() != null) {
-                            retrip.setMainLocationLat(topPlace.getLatitude());
-                            retrip.setMainLocationLng(topPlace.getLongitude());
-                            retrip.setMainLocation(topPlace.getPlaceName());
-                            log.info("분석 결과 주요 장소 업데이트: {}, 좌표: {}, {}",
-                                topPlace.getPlaceName(),
-                                topPlace.getLatitude(),
-                                topPlace.getLongitude());
-                        }
-                    }
-
-                    log.info("이미지 분석 결과 설정 완료: retripId={}", retripId);
+                AnalysisResponse.TravelImageAnalysis travelImageAnalysis = analysisResponse.getTravelImageAnalysis();
+                
+                // User 정보 설정
+                if (travelImageAnalysis.getUser() != null) {
+                    AnalysisResponse.User user = travelImageAnalysis.getUser();
+                    retrip.setCountryCode(user.getCountryCode());
+                    retrip.setMbti(user.getMbti());
+                    log.info("User 정보 설정 완료: countryCode={}, mbti={}", user.getCountryCode(), user.getMbti());
                 }
+
+                // TripSummary 정보 설정
+                if (travelImageAnalysis.getTripSummary() != null) {
+                    AnalysisResponse.TripSummary tripSummary = travelImageAnalysis.getTripSummary();
+                    retrip.setSummaryLine(tripSummary.getSummaryLine());
+                    retrip.setHashtag(tripSummary.getHashtag());
+
+                    // 키워드 리스트 설정
+                    if (tripSummary.getKeywords() != null) {
+                        if (retrip.getKeywords() == null) {
+                            retrip.setKeywords(new ArrayList<>());
+                        }
+                        retrip.getKeywords().clear();
+                        retrip.getKeywords().addAll(tripSummary.getKeywords());
+                    }
+                    
+                    log.info("TripSummary 정보 설정 완료: summaryLine={}, hashtag={}, keywords={}",
+                        tripSummary.getSummaryLine(), tripSummary.getHashtag(), tripSummary.getKeywords());
+                }
+
+                // PhotoStats 정보 설정
+                if (travelImageAnalysis.getPhotoStats() != null) {
+                    AnalysisResponse.PhotoStats photoStats = travelImageAnalysis.getPhotoStats();
+                    retrip.setFavoritePhotoSpot(photoStats.getFavoritePhotoSpot());
+
+                    // 좋아하는 피사체 이모지 리스트 설정
+                    if (photoStats.getFavoriteSubjects() != null) {
+                        if (retrip.getFavoriteSubjects() == null) {
+                            retrip.setFavoriteSubjects(new ArrayList<>());
+                        }
+                        retrip.getFavoriteSubjects().clear();
+                        retrip.getFavoriteSubjects().addAll(photoStats.getFavoriteSubjects());
+                    }
+                    
+                    log.info("PhotoStats 정보 설정 완료: favoritePhotoSpot={}, favoriteSubjects={}",
+                        photoStats.getFavoritePhotoSpot(), photoStats.getFavoriteSubjects());
+                }
+                
+                // 기존 추천 장소 정보 제거
+                if (retrip.getRecommendations() == null) {
+                    retrip.setRecommendations(new ArrayList<>());
+                }
+                retrip.getRecommendations().clear();
+                
+                // Recommendations 정보 설정
+                if (travelImageAnalysis.getRecommendations() != null) {
+                    List<AnalysisResponse.Recommendation> recommendations = travelImageAnalysis.getRecommendations();
+                    
+                    for (AnalysisResponse.Recommendation rec : recommendations) {
+                        RecommendationPlace recommendationPlace = RecommendationPlace.builder()
+                            .emoji(rec.getEmoji())
+                            .place(rec.getPlace())
+                            .description(rec.getDescription())
+                            .build();
+                        
+                        retrip.addRecommendation(recommendationPlace);
+                    }
+                    
+                    log.info("추천 장소 {} 개 설정 완료", recommendations.size());
+                }
+
+                // 여행 이름을 summaryLine으로 설정
+                if (travelImageAnalysis.getTripSummary() != null && 
+                    travelImageAnalysis.getTripSummary().getSummaryLine() != null) {
+                    retrip.setName(travelImageAnalysis.getTripSummary().getSummaryLine());
+                } else {
+                    retrip.setName(generateTripName(null, retrip.getStartDate()));
+                }
+                
+                log.info("이미지 분석 결과 설정 완료: retripId={}", retripId);
             }
         } catch (Exception e) {
             log.error("이미지 분석 결과 처리 중 오류 발생", e);
