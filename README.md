@@ -24,7 +24,7 @@
 
 | **김용범** | **오일우** | 
 | :------: |  :------: |
-| [<img src="https://github.com/user-attachments/assets/3a6295db-d747-4403-a8ff-1ef1fe111320" height=150 width=150> <br/> @Bumnote](https://github.com/Bumnote) | [<img src="https://avatars.githubusercontent.com/u/53050413?v=4" height=150 width=150> <br/> @Oilwoo](https://github.com/Oilwoo) |
+| [<img src="https://avatars.githubusercontent.com/u/88239689?v=4" height=150 width=150> <br/> @Bumnote](https://github.com/Bumnote) | [<img src="https://avatars.githubusercontent.com/u/53050413?v=4" height=150 width=150> <br/> @Oilwoo](https://github.com/Oilwoo) |
 </div>
 
 <br>
