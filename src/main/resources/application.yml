@@ -8,6 +8,16 @@ spring:
       max-file-size: 30MB
       max-request-size: 50MB
 
+  # Monitoring
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,prometheus
+    metrics:
+      tags:
+        application: retrip-api
+
 # ReTrip 애플리케이션 설정
 retrip:
   image:
