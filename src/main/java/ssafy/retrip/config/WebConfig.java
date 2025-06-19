@@ -8,11 +8,10 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@EnableWebMvc
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private String FRONT_SERVER = "http://localhost:5173";
+    private String FRONT_SERVER = "http://localhost:5267";
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {

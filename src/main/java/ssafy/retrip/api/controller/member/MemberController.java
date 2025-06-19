@@ -76,7 +76,7 @@ public class MemberController {
   @GetMapping("/history")
   public ResponseEntity<List<ImageUrlResponse>> getRetripHistoryByMemberId() {
 
-    String memberId = "4268383655";
+    String memberId = "4277332119";
     List<ImageUrlResponse> responses = memberService.getRetripHistoryByMemberId(memberId);
 
     return ResponseEntity.ok(responses);
