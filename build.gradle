@@ -82,6 +82,10 @@ dependencies {
     // 이미지 처리 관련 라이브러리 - 안정적인 버전으로 변경
     implementation 'net.coobird:thumbnailator:0.4.19'
 
+    // OpenAI 연동
+    implementation("com.openai:openai-java:2.8.1")   // 공식 SDK
+    implementation("org.springframework.boot:spring-boot-starter-webflux") // SSE 스트림 전송
+
 }
 
 tasks.named('test') {

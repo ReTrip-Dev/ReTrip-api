@@ -24,6 +24,11 @@ server:
     session:
       timeout: 60m
 
+# application.yml
+openai:
+  api-key: ${OPENAI_API_KEY}         # 환경변수 주입
+  model: gpt-4o-mini
+
 ---
 spring:
   # Profile Config
