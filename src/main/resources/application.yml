@@ -2,6 +2,7 @@ spring:
   profiles:
     default: local
 
+  # File Upload Setting
   servlet:
     multipart:
       max-file-size: 30MB
@@ -41,9 +42,11 @@ server:
     session:
       timeout: 60m
 
-# ────────────────────────────────────────────────
-# ▼ 로컬 프로필 (--- 구분자 아래) ▼
-# ────────────────────────────────────────────────
+# application.yml
+openai:
+  api-key: ${OPENAI_API_KEY}         # 환경변수 주입
+  model: gpt-4o-mini
+
 ---
 spring:
   # Profile Config
@@ -87,16 +90,18 @@ spring:
             client-id: ${REST_API_KEY}
             client-secret: ${CLIENT_SECRET_KEY}
             scope:
-              - openid
-              - name
-              - profile_nickname
-              - account_email
+              - openid              # OIDC
+              - name                # 이름
+              - profile_nickname    # 닉네임
+              - account_email       # 이메일
 
+  # Redis Config
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+  # Email
   mail:
     host: ${EMAIL_HOST}
     port: ${EMAIL_PORT}

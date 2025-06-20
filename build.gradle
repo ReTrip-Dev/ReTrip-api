@@ -86,6 +86,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
+    // OpenAI 연동
+    implementation("com.openai:openai-java:2.8.1")   // 공식 SDK
+    implementation("org.springframework.boot:spring-boot-starter-webflux") // SSE 스트림 전송
+
 }
 
 tasks.named('test') {
