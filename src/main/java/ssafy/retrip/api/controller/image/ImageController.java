@@ -1,5 +1,8 @@
 package ssafy.retrip.api.controller.image;
 
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.List;
@@ -30,18 +33,30 @@ public class ImageController {
   private final MemberRepository memberRepository;
   private final RetripReportService retripReportService;
 
+
   @PostMapping("/uploads")
   public ResponseEntity<TravelAnalysisResponseDto> uploadMultipleImages(HttpServletRequest request,
       @RequestParam("images") List<MultipartFile> images) throws IOException {
     //HttpSession session = request.getSession();
     //String memberId = String.valueOf(session.getAttribute("member"));
-    String memberId = "4268383655";
+    String memberId = "4277332119";
+
+    String cnt = String.valueOf(images.size());
+    Timer.Sample sample = Timer.start();
 
     try {
       return ResponseEntity.ok(imageService.uploadImages(images, memberId));
     } catch (Exception e) {
       e.printStackTrace();
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    } finally {
+      sample.stop(
+          Timer.builder("api.image.uploads")
+              .tag("count", cnt)              // 동적 태그
+              .publishPercentiles(0.5, 0.95, 0.99)
+              .publishPercentileHistogram()
+              .register(Metrics.globalRegistry)
+      );
     }
   }
 
@@ -52,7 +67,7 @@ public class ImageController {
 
     //HttpSession session = request.getSession();
     //String memberId = String.valueOf(session.getAttribute("member"));
-    String memberId = "4268383655";
+    String memberId = "4277332119";
     String dirName = "retrip/" + memberId + "/" + retripId;
     String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
 

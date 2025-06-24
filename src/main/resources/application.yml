@@ -2,11 +2,28 @@ spring:
   profiles:
     default: local
 
-  # File Upload Setting
   servlet:
     multipart:
       max-file-size: 30MB
       max-request-size: 50MB
+
+# ─────────────────────────────────────────────
+# Monitoring – Actuator + Micrometer Prometheus
+# ────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus      # 개발 중엔 "*"
+  metrics:
+    tags:
+      application: retrip-api
+    export:
+      prometheus:
+        enabled: true                       # ← 반드시 이 경로
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 # ReTrip 애플리케이션 설정
 retrip:
@@ -24,6 +41,9 @@ server:
     session:
       timeout: 60m
 
+# ────────────────────────────────────────────────
+# ▼ 로컬 프로필 (--- 구분자 아래) ▼
+# ────────────────────────────────────────────────
 ---
 spring:
   # Profile Config
@@ -67,44 +87,41 @@ spring:
             client-id: ${REST_API_KEY}
             client-secret: ${CLIENT_SECRET_KEY}
             scope:
-              - openid              # OIDC
-              - name                # 이름
-              - profile_nickname    # 닉네임
-              - account_email       # 이메일
+              - openid
+              - name
+              - profile_nickname
+              - account_email
 
-  # Redis Config
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
-  # Email
   mail:
     host: ${EMAIL_HOST}
     port: ${EMAIL_PORT}
     username: ${MAIL_ADDRESS}
     password: ${APP_PASSWORD}
     properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
+      mail.smtp:
+        auth: true
+        starttls.enable: true
+        starttls.required: true
 
   cloud:
     aws:
       credentials:
         access-key: ${AWS_ACCESS_KEY_ID}
         secret-key: ${AWS_SECRET_ACCESS_KEY}
-      region:
-        static: ap-northeast-2
+      region.static: ap-northeast-2
       s3:
         bucket: retrip-photos-ssafy04
         dir-name: images
-      stack:
-        auto: false
+      stack.auto: false
 
+# ────────────────────────────────────────────────
+# ▼ 테스트 프로필 ▼
+# ────────────────────────────────────────────────
 ---
 spring:
   # Profile Config
@@ -121,12 +138,9 @@ spring:
 
   # JPA Config
   jpa:
-    hibernate:
-      ddl-auto: create-drop
+    hibernate.ddl-auto: create-drop
     show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+    properties.hibernate.format_sql: true
     database-platform: org.hibernate.dialect.H2Dialect
 
   # Spring Security OAuth2, Client
@@ -149,20 +163,18 @@ spring:
             client-id: ${REST_API_KEY}
             client-secret: ${CLIENT_SECRET_KEY}
             scope:
-              - openid              # OIDC
-              - name                # 이름
-              - profile_nickname    # 닉네임
-              - account_email       # 이메일
+              - openid
+              - name
+              - profile_nickname
+              - account_email
 
   cloud:
     aws:
       credentials:
         access-key: ${AWS_ACCESS_KEY_ID}
         secret-key: ${AWS_SECRET_ACCESS_KEY}
-      region:
-        static: ap-northeast-2
+      region.static: ap-northeast-2
       s3:
         bucket: retrip-photos-ssafy04
         dir-name: test-images
-      stack:
-        auto: false
+      stack.auto: false
