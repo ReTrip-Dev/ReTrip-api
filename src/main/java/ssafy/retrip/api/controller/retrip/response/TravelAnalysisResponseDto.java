@@ -1,10 +1,10 @@
-package ssafy.retrip.api.controller.image.response;
+package ssafy.retrip.api.controller.retrip.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import ssafy.retrip.api.service.vision.response.AnalysisResponse.TravelImageAnalysis;
+import ssafy.retrip.api.service.openai.response.AnalysisResponse;
 import ssafy.retrip.domain.retrip.Retrip;
 import ssafy.retrip.domain.retrip.TimeSlot;
 
@@ -81,7 +81,7 @@ public class TravelAnalysisResponseDto {
 
   // TravelImageAnalysis와 Retrip 정보를 바탕으로 응답 DTO 생성
   public static TravelAnalysisResponseDto from(
-      Long retripId, TravelImageAnalysis analysis, Retrip retrip, String username
+      Long retripId, AnalysisResponse analysis, Retrip retrip, String username
   ) {
     return TravelAnalysisResponseDto.builder()
         .retripId(retripId)

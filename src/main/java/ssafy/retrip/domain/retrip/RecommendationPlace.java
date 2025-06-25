@@ -1,32 +1,35 @@
 package ssafy.retrip.domain.retrip;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import ssafy.retrip.domain.BaseEntity;
 
 @Entity
 @Getter
+@Setter // 서비스 로직에서 연관관계 설정을 위해 추가
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Table(name = "recommendation_places")
 public class RecommendationPlace extends BaseEntity {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
-    private String emoji;        // 장소 특성을 나타내는 이모지
-    
+    private String emoji;
+
     @Column(nullable = false)
-    private String place;        // 추천 장소명
-    
-    @Column(nullable = false)
-    private String description;  // 장소에 대한 간략한 설명
-    
-    // Retrip과의 관계는 Retrip 엔터티에서 관리
+    private String place;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String description;
+
+    // Retrip과의 N:1 연관관계
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "retrip_id")
+    @JsonBackReference // 순환 참조 방지
+    private Retrip retrip;
 }
