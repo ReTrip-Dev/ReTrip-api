@@ -40,3 +40,4 @@ out/
 .env
 .gitattributes
 .gitmessage.txt
+application-secret.yml
