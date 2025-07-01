@@ -20,7 +20,7 @@ public class OpenAiClient {
   private final ObjectMapper objectMapper;
   private final RestClient restClient;
 
-  @Value("${openai.api.key}")
+  @Value("${openai.api-key}")
   private String apiKey;
 
   @Value("${openai.api.url:https://api.openai.com/v1}")
