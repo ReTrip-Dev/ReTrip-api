@@ -10,4 +10,9 @@ public class TestController {
   public String test() {
     return "CI Test Success!";
   }
+
+  @GetMapping("/re-test")
+  public String reTest() {
+    return "CI Re-Test Success!";
+  }
 }
