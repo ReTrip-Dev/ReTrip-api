@@ -1,0 +1,87 @@
+name: Retrip CI
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev" ]
+
+jobs:
+  build-and-test:
+    name: 빌드와 테스트를 진행합니다.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write 
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: JDK 21을 설치합니다.
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    - name: Gradle을 SetUp 합니다.
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582
+      with:
+        cache-read-only: false
+        
+    - name: Gradle 명령 실행을 위한 권한을 부여합니다.
+      run: chmod +x gradlew
+
+    - name: Gradle clean build를 수행합니다.
+      run: ./gradlew clean build
+
+    - name: 테스트 결과를 PR에 코멘트로 등록합니다.
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: '**/build/test-results/test/TEST-*.xml'
+
+  build-and-push:
+    name: Docker 이미지를 빌드하고 Push합니다.
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: startsWith(github.head_ref, 'feat/') || github.event_name == 'push'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: JDK 21 및 Gradle 캐시 설정
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    - name: Gradle 명령 실행을 위한 권한 부여
+      run: chmod +x gradlew
+
+    - name: application-secret.yml 파일 생성
+      run: echo "${{ secrets.APPLICATION }}" > ./src/main/resources/application-secret.yml
+
+    - name: Gradle build 실행
+      run: ./gradlew build -x test
+
+    - name: Docker Buildx를 설정합니다.
+      uses: docker/setup-buildx-action@v1
+
+    - name: Docker Login을 수행합니다.
+      uses: docker/login-action@v3
+      with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Docker 이미지 빌드 및 Docker Hub Push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:${{ github.sha }}
+          ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
+          
