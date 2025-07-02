@@ -1,0 +1,36 @@
+name: Retrip CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    name: EC2에 배포
+    runs-on: ubuntu-latest
+
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: SSH 키 설정
+        run: |
+          echo "${{ secrets.PEM_KEY }}" > id_rsa
+          chmod 400 id_rsa
+
+      - name: EC2에 파일 전송
+        run: |
+          scp -o StrictHostKeyChecking=no -i id_rsa docker-compose.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}
+          scp -o StrictHostKeyChecking=no -i id_rsa .env ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}
+
+      - name: EC2에서 Docker Compose 실행
+        run: |
+          ssh -o StrictHostKeyChecking=no -i id_rsa ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            cd /home/${{ secrets.EC2_USER }} &&
+            docker-compose pull &&
+            docker-compose up -d
+          "
