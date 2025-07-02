@@ -24,6 +24,12 @@ jobs:
           echo "${{ secrets.PEM_KEY }}" > id_rsa
           chmod 400 id_rsa
 
+      - name: .env 파일 생성 (CD 단계)
+        run: echo "${{ secrets.DOTENV_FILE }}" > .env
+
+      - name: application-secret.yml 생성 (CD 단계)
+        run: echo "${{ secrets.APPLICATION }}" > ./applion-secret.yml
+
       - name: EC2에 파일 전송
         run: |
           scp -o StrictHostKeyChecking=no -i id_rsa docker-compose.yml ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:/home/${{ env.EC2_USER }}
