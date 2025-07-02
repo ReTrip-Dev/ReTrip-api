@@ -1,5 +1,65 @@
-version: '3.7'
+version: '3.8'
+
 services:
+  retrip-app:
+    image: bumnote/retrip:latest
+    platform: linux/amd64
+    container_name: retrip-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_REDIS_HOST: ${SPRING_REDIS_HOST}
+      SPRING_REDIS_PORT: ${SPRING_REDIS_PORT}
+    networks:
+      - retrip-net
+    restart: always
+
+  db:
+    image: mysql:8.0
+    platform: linux/amd64
+    container_name: retrip-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql/mysql-healthcheck.sh:/usr/local/bin/mysql-healthcheck.sh
+
+    networks:
+      - retrip-net
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "/usr/local/bin/mysql-healthcheck.sh" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis:
+    image: redis:7
+    platform: linux/amd64
+    container_name: retrip-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - retrip-net
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
@@ -22,8 +82,53 @@ services:
       - prometheus
     restart: always
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - certbot_data:/etc/letsencrypt
+    depends_on:
+      - retrip-app
+    networks:
+      - retrip-net
+    restart: always
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    env_file:
+      - .env
+    volumes:
+      - certbot_data:/etc/letsencrypt
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    entrypoint: >
+      sh -c "
+      certbot certonly --webroot \
+        --webroot-path=/var/www/certbot \
+        -d retrip.kr \
+        -d www.retrip.kr \
+        --email $CERTBOT_EMAIL \
+        --agree-tos \
+        --no-eff-email \
+        --force-renewal"
+    depends_on:
+      - nginx
+    networks:
+      - retrip-net
 
 volumes:
+  dbdata:
   grafana-storage:
+  certbot_data:
+
+networks:
+  retrip-net:
+    driver: bridge
+
