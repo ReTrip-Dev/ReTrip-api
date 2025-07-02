@@ -28,7 +28,7 @@ jobs:
         run: echo "${{ secrets.DOTENV_FILE }}" > .env
 
       - name: application-secret.yml 생성 (CD 단계)
-        run: echo "${{ secrets.APPLICATION }}" > ./applion-secret.yml
+        run: echo "${{ secrets.APPLICATION }}" > ./src/main/resources/application-secret.yml
 
       - name: EC2에 파일 전송
         run: |
