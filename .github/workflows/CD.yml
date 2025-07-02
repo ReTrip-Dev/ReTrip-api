@@ -1,7 +1,7 @@
 name: Retrip CD
 
 on:
-  pull_request: 
+  pull_request:
     branches: [ "main", "dev" ]
   push:
     branches: [ "main" ]
@@ -26,8 +26,9 @@ jobs:
 
       - name: EC2에 파일 전송
         run: |
-          scp -o StrictHostKeyChecking=no -i id_rsa docker-compose.yml ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}
-          scp -o StrictHostKeyChecking=no -i id_rsa .env ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}
+          scp -o StrictHostKeyChecking=no -i id_rsa docker-compose.yml ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:/home/${{ env.EC2_USER }}
+          scp -o StrictHostKeyChecking=no -i id_rsa .env ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:/home/${{ env.EC2_USER }}
+          scp -o StrictHostKeyChecking=no -i id_rsa ./src/main/resources/application-secret.yml ${{ env.EC2_USER }}@${{ env.EC2_HOST }}:/home/${{ env.EC2_USER }}/application-secret.yml
 
       - name: EC2에서 Docker Compose 실행
         run: |
