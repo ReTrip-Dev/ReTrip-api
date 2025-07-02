@@ -15,4 +15,9 @@ public class TestController {
   public String reTest() {
     return "CI Re-Test Success!";
   }
+
+  @GetMapping("/ci-test")
+  public String ciTest() {
+    return "CI Test Endpoint Reached!";
+  }
 }
