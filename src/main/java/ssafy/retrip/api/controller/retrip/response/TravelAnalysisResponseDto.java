@@ -35,6 +35,18 @@ public class TravelAnalysisResponseDto {
     private String username;
     private String countryCode;
     private String mbti;
+    private EgenTetoDto egenTeto;
+  }
+
+  @Getter
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Builder
+  public static class EgenTetoDto {
+
+    private String type;
+    private String subtype;
+    private String hashtag;
   }
 
   @Getter
@@ -83,12 +95,23 @@ public class TravelAnalysisResponseDto {
   public static TravelAnalysisResponseDto from(
       Long retripId, AnalysisResponse analysis, Retrip retrip, String username
   ) {
+    // 에겐테토 정보 안전하게 처리
+    EgenTetoDto egenTetoDto = null;
+    if (analysis.getUser().getEgenTeto() != null) {
+      egenTetoDto = EgenTetoDto.builder()
+          .type(analysis.getUser().getEgenTeto().getType())
+          .subtype(analysis.getUser().getEgenTeto().getSubtype())
+          .hashtag(analysis.getUser().getEgenTeto().getHashtag())
+          .build();
+    }
+
     return TravelAnalysisResponseDto.builder()
         .retripId(retripId)
         .user(UserDto.builder()
             .username(username)
             .countryCode(analysis.getUser().getCountryCode())
             .mbti(analysis.getUser().getMbti())
+            .egenTeto(egenTetoDto)
             .build())
         .tripSummary(TripSummaryDto.builder()
             .summaryLine(analysis.getTripSummary().getSummaryLine())

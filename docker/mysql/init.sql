@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS retrips
     mbti                VARCHAR(255),
     summary_line        VARCHAR(255),
     main_time_slot      ENUM ('AFTERNOON','DAWN','MORNING','NIGHT'),
+    egen_teto_type      VARCHAR(255),
+    egen_teto_subtype   VARCHAR(255),
+    egen_teto_hashtag   VARCHAR(255),
     PRIMARY KEY (id),
     CONSTRAINT FK_retrips_member FOREIGN KEY (member_id) REFERENCES members (id)
 ) ENGINE = InnoDB
