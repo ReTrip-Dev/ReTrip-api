@@ -116,10 +116,19 @@ public class RetripService {
       throw new IllegalStateException("GPT 분석 결과의 세부 정보(사용자, 요약, 통계)가 누락되었습니다.");
     }
 
+    // 에겐/테토 정보 추출
+    AnalysisResponse.EgenTeto egenTeto = user.getEgenTeto();
+    String egenTetoType = egenTeto != null ? egenTeto.getType() : null;
+    String egenTetoSubtype = egenTeto != null ? egenTeto.getSubtype() : null;
+    String egenTetoHashtag = egenTeto != null ? egenTeto.getHashtag() : null;
+
     Retrip retrip = Retrip.builder()
         .member(member)
         .countryCode(user.getCountryCode())
         .mbti(user.getMbti())
+        .egenTetoType(egenTetoType)
+        .egenTetoSubtype(egenTetoSubtype)
+        .egenTetoHashtag(egenTetoHashtag)
         .summaryLine(summary.getSummaryLine())
         .keywords(String.join(",", summary.getKeywords()))
         .hashtag(summary.getHashtag())
