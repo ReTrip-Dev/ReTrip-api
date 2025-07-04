@@ -1,15 +1,17 @@
 name: Retrip CD
 
 on:
-  pull_request:
+  workflow_run:
+    workflows: [ "Retrip CI" ]
+    types:
+      - completed
     branches: [ "main", "dev" ]
-  push:
-    branches: [ "main" ]
 
 jobs:
   deploy:
     name: EC2에 배포
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout
