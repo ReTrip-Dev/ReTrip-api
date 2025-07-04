@@ -13,7 +13,7 @@ fi
 export $(grep -v '^#' .env | xargs)
 
 MAIN_DOMAIN="retrip.kr"
-CERT_FILE_PATH="/etc/letsencrypt/live/$MAIN_DOMAIN/fullchain.pem"
+CERT_FILE_PATH="./data/certbot/conf/live/$MAIN_DOMAIN/fullchain.pem"
 NGINX_CONF_DIR="./nginx/conf.d"
 NGINX_CONTAINER_NAME="nginx"
 
@@ -28,10 +28,41 @@ fi
 
 echo "Docker Compose 명령어: $DOCKER_COMPOSE"
 sudo mkdir -p $NGINX_CONF_DIR
+sudo mkdir -p ./data/certbot/conf
 sudo mkdir -p ./data/certbot/www
 
-if [ ! -f "$CERT_FILE_PATH" ]; then
-    echo "SSL 인증서가 존재하지 않습니다. Let's Encrypt 발급 절차를 시작합니다."
+check_certificate() {
+    if [ -f "$CERT_FILE_PATH" ]; then
+        echo "기존 SSL 인증서를 찾았습니다: $CERT_FILE_PATH"
+
+        if openssl x509 -checkend 2592000 -noout -in "$CERT_FILE_PATH" > /dev/null 2>&1; then
+            echo "인증서가 유효합니다. (30일 이상 남음)"
+            return 0
+        else
+            echo "인증서가 30일 이내에 만료됩니다. 갱신이 필요합니다."
+            return 1
+        fi
+    else
+        echo "SSL 인증서가 존재하지 않습니다."
+        return 1
+    fi
+}
+
+renew_certificate() {
+    echo "인증서 갱신을 시도합니다..."
+    $DOCKER_COMPOSE run --rm certbot renew
+
+    if [ $? -eq 0 ]; then
+        echo "인증서 갱신 성공!"
+        return 0
+    else
+        echo "인증서 갱신 실패. 새로 발급을 시도합니다."
+        return 1
+    fi
+}
+
+issue_new_certificate() {
+    echo "새로운 SSL 인증서 발급을 시작합니다."
 
     echo "인증서 발급을 위해 임시 Nginx 설정을 적용합니다."
     sudo cp ./nginx-cert-setup.conf $NGINX_CONF_DIR/default.conf
@@ -48,16 +79,39 @@ if [ ! -f "$CERT_FILE_PATH" ]; then
       --email $CERTBOT_EMAIL --agree-tos --no-eff-email
 
     if [ $? -ne 0 ]; then
-        echo "SSL 인증서 발급에 실패했습니다. Nginx 로그를 확인하세요."
+        echo "SSL 인증서 발급에 실패했습니다."
+        echo "Let's Encrypt 발급 제한에 걸렸을 가능성이 있습니다."
+        echo "다음 중 하나를 시도해보세요:"
+        echo "1. 기존 인증서 파일을 수동으로 복사"
+        echo "2. 발급 제한 해제까지 대기"
+        echo "3. 스테이징 환경에서 테스트"
+
         $DOCKER_COMPOSE logs nginx
-        exit 1
+        return 1
     fi
+
     echo "SSL 인증서 발급 성공!"
     $DOCKER_COMPOSE down
-else
-    echo "SSL 인증서가 이미 존재합니다. 발급 단계를 건너뜁니다."
-fi
+    return 0
+}
 
+if check_certificate; then
+    echo "기존 인증서를 사용합니다."
+else
+    echo "인증서 처리가 필요합니다."
+
+    if [ -f "$CERT_FILE_PATH" ]; then
+        if ! renew_certificate; then
+            echo "갱신 실패. 새 인증서 발급을 건너뜁니다."
+            echo "기존 인증서를 그대로 사용합니다."
+        fi
+    else
+        if ! issue_new_certificate; then
+            echo "인증서 발급 실패. HTTP로 서비스를 시작합니다."
+            echo "수동으로 인증서를 설정한 후 다시 배포하세요."
+        fi
+    fi
+fi
 
 echo "최종 운영 설정을 적용하고 모든 서비스를 시작합니다."
 
