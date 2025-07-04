@@ -1,10 +1,10 @@
-version: '3.8'
-
 services:
   retrip-app:
     image: bumnote/retrip:latest
     platform: linux/amd64
     container_name: retrip-app
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     depends_on:
@@ -24,6 +24,8 @@ services:
     image: mysql:8.0
     platform: linux/amd64
     container_name: retrip-db
+    env_file:
+      - .env
     ports:
       - "3306:3306"
     environment:
@@ -64,7 +66,7 @@ services:
     image: prom/prometheus
     container_name: prometheus
     volumes:
-      - ./src/main/resources/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     restart: always
@@ -74,6 +76,8 @@ services:
   grafana:
     image: grafana/grafana
     container_name: grafana
+    env_file:
+      - .env
     ports:
       - "3000:3000"
     volumes:
@@ -93,7 +97,8 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - certbot_data:/etc/letsencrypt
+      - ./nginx/html:/var/www/certbot
+      - ./nginx/ssl:/etc/letsencrypt
     depends_on:
       - retrip-app
     networks:
@@ -106,18 +111,10 @@ services:
     env_file:
       - .env
     volumes:
-      - certbot_data:/etc/letsencrypt
-      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/html:/var/www/certbot
     entrypoint: >
-      sh -c "
-      certbot certonly --webroot \
-        --webroot-path=/var/www/certbot \
-        -d retrip.kr \
-        -d www.retrip.kr \
-        --email $CERTBOT_EMAIL \
-        --agree-tos \
-        --no-eff-email \
-        --force-renewal"
+      sh -c "certbot certonly --webroot --webroot-path=/var/www/certbot -d retrip.kr -d www.retrip.kr -d api.retrip.kr --email $CERTBOT_EMAIL --agree-tos --no-eff-email --force-renewal"
     depends_on:
       - nginx
     networks:
@@ -131,4 +128,3 @@ volumes:
 networks:
   retrip-net:
     driver: bridge
-

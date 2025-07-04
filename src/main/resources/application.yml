@@ -32,12 +32,7 @@ management:
 retrip:
   image:
     min-count: 5
-    max-count: 30
-
-# ChatGPT 중계서버 설정
-chatgpt:
-  proxy:
-    url: http://localhost:5000/analyze_s3_images
+    max-count: 20
 
 server:
   servlet:
