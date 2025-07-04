@@ -17,6 +17,18 @@ CREATE TABLE IF NOT EXISTS members
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
 
+CREATE TABLE IF NOT EXISTS retrip_reports
+(
+    id          BIGINT NOT NULL AUTO_INCREMENT,
+    created_at  DATETIME(6),
+    modified_at DATETIME(6),
+    image_url   VARCHAR(255),
+    member_id   VARCHAR(255),
+    PRIMARY KEY (id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci;
+
 CREATE TABLE IF NOT EXISTS retrips
 (
     id                  BIGINT NOT NULL AUTO_INCREMENT,
@@ -37,6 +49,9 @@ CREATE TABLE IF NOT EXISTS retrips
     mbti                VARCHAR(255),
     summary_line        VARCHAR(255),
     main_time_slot      ENUM ('AFTERNOON','DAWN','MORNING','NIGHT'),
+    egen_teto_type      VARCHAR(255),
+    egen_teto_subtype   VARCHAR(255),
+    egen_teto_hashtag   VARCHAR(255),
     PRIMARY KEY (id),
     CONSTRAINT FK_retrips_member FOREIGN KEY (member_id) REFERENCES members (id)
 ) ENGINE = InnoDB
@@ -54,18 +69,6 @@ CREATE TABLE IF NOT EXISTS recommendation_places
     place       VARCHAR(255) NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT FK_recommendation_places_retrip FOREIGN KEY (retrip_id) REFERENCES retrips (id)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS retrip_reports
-(
-    id          BIGINT NOT NULL AUTO_INCREMENT,
-    created_at  DATETIME(6),
-    modified_at DATETIME(6),
-    image_url   VARCHAR(255),
-    member_id   VARCHAR(255),
-    PRIMARY KEY (id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;

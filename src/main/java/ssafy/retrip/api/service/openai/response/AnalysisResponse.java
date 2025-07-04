@@ -19,6 +19,16 @@ public class AnalysisResponse {
   public static class User {
     private String countryCode;
     private String mbti;
+    private EgenTeto egenTeto;
+  }
+
+  @Getter
+  @NoArgsConstructor
+  public static class EgenTeto {
+
+    private String type;
+    private String subtype;
+    private String hashtag;
   }
 
   @Getter

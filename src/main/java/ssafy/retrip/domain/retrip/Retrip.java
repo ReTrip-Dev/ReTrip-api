@@ -26,6 +26,9 @@ public class Retrip extends BaseEntity {
     // --- GPT 분석 결과 ---
     private String countryCode;
     private String mbti;
+    private String egenTetoType; // EGEN 또는 TETO
+    private String egenTetoSubtype; // 세부 유형 (예: "귀족의 피가 흐르는 에겐녀")
+    private String egenTetoHashtag; // #에겐 또는 #테토
     private String summaryLine;
     private String hashtag;
     private String favoriteSubjects; // 쉼표로 구분된 문자열
