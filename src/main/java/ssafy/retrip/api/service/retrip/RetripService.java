@@ -185,7 +185,7 @@ public class RetripService {
       AnalysisResponse analysis) {
     // 회원이 존재하면 회원의 닉네임을, 없으면 "비회원"를 사용합니다.
     String username =
-        (retrip.getMember() != null) ? retrip.getMember().getNickname() : "비회원";
+        (retrip.getMember() != null) ? retrip.getMember().getNickname() : "여행자님";
 
     return TravelAnalysisResponseDto.from(
         retrip.getId(),
