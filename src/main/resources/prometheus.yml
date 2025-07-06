@@ -3,7 +3,11 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'spring-boot-app'
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: [ "prometheus:9090" ]
+
+  - job_name: 'retrip-actuator'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: [ 'host.docker.internal:8080' ]
+      - targets: [ 'retrip-app:8080' ]
