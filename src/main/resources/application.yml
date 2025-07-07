@@ -15,29 +15,37 @@ spring:
 # prometheus & actuator
 management:
   endpoints:
+    shutdown:
+      enabled: false
     web:
       exposure:
         include: health,info,prometheus
   metrics:
     tags:
       application: retrip-api
-    export:
-      prometheus:
-        enabled: true
     distribution:
       percentiles-histogram:
         http.server.requests: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
-# ReTrip 애플리케이션 설정
+# ReTrip Application Config
 retrip:
   image:
     min-count: 5
     max-count: 20
 
 server:
+  # Session Config
   servlet:
     session:
       timeout: 60m
+  # Tomcat Metric Setting
+  tomcat:
+    mbeanregistry:
+      enabled: true
 
 openai:
   api-key: ${openai.api-key}

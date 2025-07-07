@@ -2,9 +2,9 @@ name: Retrip CI
 
 on:
   push:
-    branches: [ "dev" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "dev" ]
+    branches: [ "main", "dev" ]
 
 jobs:
   build-and-test:
@@ -45,7 +45,7 @@ jobs:
     name: Docker 이미지를 빌드하고 Push합니다.
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: startsWith(github.head_ref, 'feat/') || github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')
 
     steps:
     - uses: actions/checkout@v4
@@ -87,4 +87,10 @@ jobs:
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:${{ github.sha }}
           ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:latest
+
+    - name: 배포 완료 알림
+      run: |
+        echo "🚀 Docker 이미지가 성공적으로 배포되었습니다!"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
           

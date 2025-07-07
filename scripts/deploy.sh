@@ -16,6 +16,7 @@ MAIN_DOMAIN="retrip.kr"
 CERT_FILE_PATH="./data/certbot/conf/live/$MAIN_DOMAIN/fullchain.pem"
 NGINX_CONF_DIR="./nginx/conf.d"
 NGINX_CONTAINER_NAME="nginx"
+WHITELIST_FILE="$NGINX_CONF_DIR/allowed_ips.conf"
 
 if command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE="docker-compose"
@@ -31,11 +32,56 @@ sudo mkdir -p $NGINX_CONF_DIR
 sudo mkdir -p ./data/certbot/conf
 sudo mkdir -p ./data/certbot/www
 
+setup_whitelist() {
+    echo "화이트리스트 설정을 확인합니다..."
+
+    # 환경변수에서 화이트리스트 설정 확인
+    if [ -z "$WHITELIST_IPS" ]; then
+        echo "WARNING: WHITELIST_IPS 환경변수가 설정되지 않았습니다."
+        echo "모든 IP에서 접근이 허용됩니다."
+
+        # 기본 설정 (모든 IP 허용)
+        cat > "$WHITELIST_FILE" << EOF
+EOF
+        return 0
+    fi
+
+    echo "화이트리스트가 설정되었습니다: $WHITELIST_IPS"
+
+    # 화이트리스트 파일 생성
+    cat > "$WHITELIST_FILE" << EOF
+EOF
+
+    # 쉼표로 구분된 IP들을 처리
+    IFS=',' read -ra IPS <<< "$WHITELIST_IPS"
+    for ip in "${IPS[@]}"; do
+        # 공백 제거
+        ip=$(echo "$ip" | xargs)
+
+        # IP 형식 검증
+        if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(/[0-9]{1,2})?$ ]]; then
+            echo "allow $ip;" >> "$WHITELIST_FILE"
+            echo "  - 허용된 IP: $ip"
+        else
+            echo "WARNING: 잘못된 IP 형식입니다: $ip"
+        fi
+    done
+
+    # 마지막에 deny all 추가
+    echo "deny all;" >> "$WHITELIST_FILE"
+
+    echo "화이트리스트 설정이 완료되었습니다."
+    echo "설정된 내용:"
+    cat "$WHITELIST_FILE"
+}
+
 check_certificate() {
-    if [ -f "$CERT_FILE_PATH" ]; then
+    # sudo 권한으로 파일 존재 확인
+    if sudo [ -f "$CERT_FILE_PATH" ]; then
         echo "기존 SSL 인증서를 찾았습니다: $CERT_FILE_PATH"
 
-        if openssl x509 -checkend 2592000 -noout -in "$CERT_FILE_PATH" > /dev/null 2>&1; then
+        # sudo 권한으로 openssl 실행
+        if sudo openssl x509 -checkend 2592000 -noout -in "$CERT_FILE_PATH" > /dev/null 2>&1; then
             echo "인증서가 유효합니다. (30일 이상 남음)"
             return 0
         else
@@ -75,7 +121,11 @@ issue_new_certificate() {
     echo "Certbot으로 SSL 인증서를 요청합니다..."
     $DOCKER_COMPOSE run --rm certbot certonly \
       --webroot --webroot-path=/var/www/certbot \
-      -d retrip.kr -d www.retrip.kr -d api.retrip.kr \
+      -d retrip.kr \
+      -d www.retrip.kr \
+      -d api.retrip.kr \
+      -d grafana.retrip.kr \
+      -d prometheus.retrip.kr \
       --email $CERTBOT_EMAIL --agree-tos --no-eff-email
 
     if [ $? -ne 0 ]; then
@@ -94,6 +144,9 @@ issue_new_certificate() {
     $DOCKER_COMPOSE down
     return 0
 }
+
+# 화이트리스트 설정
+setup_whitelist
 
 if check_certificate; then
     echo "기존 인증서를 사용합니다."
@@ -130,4 +183,7 @@ $DOCKER_COMPOSE exec $NGINX_CONTAINER_NAME nginx -s reload
 echo "================================================================="
 echo "배포가 성공적으로 완료되었습니다!"
 echo "서비스 URL: https://$MAIN_DOMAIN"
+if [ -f "$WHITELIST_FILE" ] && grep -q "deny all" "$WHITELIST_FILE"; then
+    echo "화이트리스트가 적용되었습니다. 허용된 IP 주소에서만 모니터링 도구 접근이 가능합니다."
+fi
 echo "================================================================="
