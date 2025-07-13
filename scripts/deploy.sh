@@ -16,7 +16,7 @@ MAIN_DOMAIN="retrip.kr"
 CERT_FILE_PATH="./data/certbot/conf/live/$MAIN_DOMAIN/fullchain.pem"
 NGINX_CONF_DIR="./nginx/conf.d"
 NGINX_CONTAINER_NAME="nginx"
-WHITELIST_FILE="$NGINX_CONF_DIR/allowed_ips.conf"
+WHITELIST_FILE="$NGINX_CONF_DIR/allowed_ips.rules"
 
 if command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE="docker-compose"
@@ -41,7 +41,8 @@ setup_whitelist() {
         echo "모든 IP에서 접근이 허용됩니다."
 
         # 기본 설정 (모든 IP 허용)
-        cat > "$WHITELIST_FILE" << EOF
+        sudo tee "$WHITELIST_FILE" > /dev/null << EOF
+
 EOF
         return 0
     fi
@@ -49,7 +50,7 @@ EOF
     echo "화이트리스트가 설정되었습니다: $WHITELIST_IPS"
 
     # 화이트리스트 파일 생성
-    cat > "$WHITELIST_FILE" << EOF
+    sudo tee "$WHITELIST_FILE" > /dev/null << EOF
 EOF
 
     # 쉼표로 구분된 IP들을 처리
@@ -60,7 +61,7 @@ EOF
 
         # IP 형식 검증
         if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(/[0-9]{1,2})?$ ]]; then
-            echo "allow $ip;" >> "$WHITELIST_FILE"
+            echo "allow $ip;" | sudo tee -a "$WHITELIST_FILE" > /dev/null
             echo "  - 허용된 IP: $ip"
         else
             echo "WARNING: 잘못된 IP 형식입니다: $ip"
@@ -68,7 +69,7 @@ EOF
     done
 
     # 마지막에 deny all 추가
-    echo "deny all;" >> "$WHITELIST_FILE"
+    echo "deny all;" | sudo tee -a "$WHITELIST_FILE" > /dev/null
 
     echo "화이트리스트 설정이 완료되었습니다."
     echo "설정된 내용:"
@@ -170,6 +171,9 @@ echo "최종 운영 설정을 적용하고 모든 서비스를 시작합니다."
 
 echo "운영용 Nginx 설정을 적용합니다."
 sudo cp ./nginx-prod.conf $NGINX_CONF_DIR/default.conf
+
+echo "기존 컨테이너를 종료합니다..."
+$DOCKER_COMPOSE down
 
 echo "새로운 Docker 이미지를 pull 합니다"
 $DOCKER_COMPOSE pull retrip-app
