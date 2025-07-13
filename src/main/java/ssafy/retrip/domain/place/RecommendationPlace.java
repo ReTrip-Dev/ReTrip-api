@@ -1,5 +1,7 @@
 package ssafy.retrip.domain.place;
 
+import static lombok.AccessLevel.*;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,10 +10,7 @@ import ssafy.retrip.domain.retrip.Retrip;
 
 @Entity
 @Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = PROTECTED)
 @Table(name = "recommendation_places")
 public class RecommendationPlace extends BaseEntity {
 
@@ -32,4 +31,15 @@ public class RecommendationPlace extends BaseEntity {
   @JoinColumn(name = "retrip_id")
   @JsonBackReference
   private Retrip retrip;
+
+  @Builder
+  private RecommendationPlace(String emoji, String place, String description) {
+    this.emoji = emoji;
+    this.place = place;
+    this.description = description;
+  }
+
+  public void updateRetrip(Retrip retrip) {
+    this.retrip = retrip;
+  }
 }

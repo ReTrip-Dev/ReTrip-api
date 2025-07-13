@@ -58,11 +58,11 @@ public class Retrip extends BaseEntity {
 
   @OneToMany(mappedBy = "retrip", cascade = CascadeType.ALL, orphanRemoval = true)
   @JsonManagedReference
-  private List<RecommendationPlace> recommendations = new ArrayList<>();
+  private final List<RecommendationPlace> recommendations = new ArrayList<>();
 
   public void addRecommendation(RecommendationPlace recommendation) {
     recommendations.add(recommendation);
-    recommendation.setRetrip(this);
+    recommendation.updateRetrip(this);
   }
 
   public void updateRetripDetailsData(

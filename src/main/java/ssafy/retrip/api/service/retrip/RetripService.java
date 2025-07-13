@@ -1,5 +1,6 @@
 package ssafy.retrip.api.service.retrip;
 
+import static ssafy.retrip.domain.retrip.TimeSlot.*;
 import static ssafy.retrip.utils.CoordinateUtil.analyzeMainLocation;
 import static ssafy.retrip.utils.CoordinateUtil.calculateAverageCoordinates;
 import static ssafy.retrip.utils.DateUtil.findEarliestTakenDate;
@@ -142,7 +143,8 @@ public class RetripService {
             .emoji(dto.getEmoji())
             .place(dto.getPlace())
             .description(dto.getDescription())
-            .build());
+            .build()
+        );
       }
     }
 
@@ -163,7 +165,7 @@ public class RetripService {
 
   private TimeSlot analyzeMainTimeSlot(List<ImageMetaData> metadataList) {
     if (metadataList.stream().allMatch(m -> m.getTakenDate() == null)) {
-      return TimeSlot.AFTERNOON;
+      return AFTERNOON;
     }
     return metadataList.stream()
         .map(ImageMetaData::getTakenDate)
@@ -172,7 +174,7 @@ public class RetripService {
         .entrySet().stream()
         .max(Map.Entry.comparingByValue())
         .map(Map.Entry::getKey)
-        .orElse(TimeSlot.AFTERNOON);
+        .orElse(AFTERNOON);
   }
 
   public void updateRetripDetailsFromMetadata(Retrip retrip, List<ImageMetaData> metadataList) {
