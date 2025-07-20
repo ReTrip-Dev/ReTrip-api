@@ -3,7 +3,6 @@ package ssafy.retrip.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
@@ -14,20 +13,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import ssafy.retrip.api.service.oauth.CustomOAuth2UserService;
 import ssafy.retrip.filter.SessionAuthenticationFilter;
-import ssafy.retrip.handler.OAuth2AuthenticationFailureHandler;
-import ssafy.retrip.handler.OAuth2AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final CustomOAuth2UserService customOAuth2UserService;
   private final SessionAuthenticationFilter sessionAuthenticationFilter;
-  private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
-  private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
 
   @Bean
   public BCryptPasswordEncoder passwordEncoder() {
@@ -49,16 +42,6 @@ public class SecurityConfig {
         );
 
     http
-        .oauth2Client(Customizer.withDefaults())
-        .oauth2Login(oauth2 -> oauth2
-            .successHandler(oAuth2AuthenticationSuccessHandler)
-            .failureHandler(oAuth2AuthenticationFailureHandler)
-            .userInfoEndpoint(userInfo -> userInfo
-                .oidcUserService(customOAuth2UserService)
-            )
-        );
-
-    http
         .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     http
@@ -67,7 +50,6 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .maximumSessions(1)
                 .maxSessionsPreventsLogin(true)
-                .expiredUrl("/login?expired=true")
         );
 
     return http.build();

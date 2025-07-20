@@ -44,13 +44,4 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", e.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
-
-    @ExceptionHandler(NicknameAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleNicknameAlreadyExistsException(
-        NicknameAlreadyExistsException e) {
-        Map<String, String> errorResponse = new HashMap<>();
-        errorResponse.put("error", "중복된 아이디");
-        errorResponse.put("message", e.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
-    }
 }
