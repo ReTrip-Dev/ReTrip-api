@@ -53,18 +53,16 @@ server:
 
 ---
 spring:
-  # Profile Config
   config:
     activate:
       on-profile: local
 
   datasource:
-    driver-class-name: ${db.local.driver-class-name}
     url: ${db.local.url}
     username: ${db.local.username}
     password: ${db.local.password}
+    driver-class-name: ${db.local.driver-class-name}
 
-  # JPA Config
   jpa:
     show-sql: true
     database: mysql
@@ -74,11 +72,10 @@ spring:
       hibernate:
         format_sql: true
 
-  # Redis Config
   data:
     redis:
-      host: ${redis.host}
-      port: ${redis.port}
+      host: ${redis.local.host}
+      port: ${redis.local.port}
 
   codec:
     max-in-memory-size: 10MB
@@ -87,6 +84,44 @@ retrip:
   image:
     min-count: 3
     max-count: 8
+    max-size-mb: 10
+
+  processing:
+    timeout-seconds: 90
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${db.prod.url}
+    username: ${db.prod.username}
+    password: ${db.prod.password}
+    driver-class-name: ${db.prod.driver-class-name}
+
+  jpa:
+    show-sql: false
+    database: mysql
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+
+  data:
+    redis:
+      host: ${redis.prod.host}
+      port: ${redis.prod.port}
+
+  codec:
+    max-in-memory-size: 10MB
+
+retrip:
+  image:
+    min-count: 5
+    max-count: 20
     max-size-mb: 10
 
   processing:
