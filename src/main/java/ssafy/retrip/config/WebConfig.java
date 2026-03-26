@@ -1,14 +1,11 @@
 package ssafy.retrip.config;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.web.DefaultRedirectStrategy;
-import org.springframework.security.web.RedirectStrategy;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.reactive.config.CorsRegistry;
+import org.springframework.web.reactive.config.WebFluxConfigurer;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig implements WebFluxConfigurer {
 
   private String FRONTEND_LOCAL_SERVER = "http://127.0.0.1:5173";
   private String BACKEND_LOCAL_SERVER = "http://127.0.0.1:8080";
@@ -28,10 +25,5 @@ public class WebConfig implements WebMvcConfigurer {
         .allowedHeaders("*")
         .exposedHeaders("Authorization")
         .allowCredentials(true);
-  }
-
-  @Bean
-  public RedirectStrategy redirectStrategy() {
-    return new DefaultRedirectStrategy();
   }
 }
