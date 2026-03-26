@@ -7,6 +7,7 @@ import static ssafy.retrip.utils.DateUtil.findLatestTakenDate;
 import static ssafy.retrip.utils.DistanceUtil.calculateTotalDistance;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import ssafy.retrip.api.controller.retrip.response.TravelAnalysisResponseDto;
 import ssafy.retrip.api.service.openai.response.AnalysisResponse;
 import ssafy.retrip.api.service.openai.response.AnalysisResponse.Recommendation;
@@ -26,13 +29,23 @@ import ssafy.retrip.domain.retrip.TimeSlot;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class RetripPersistenceService {
 
   public static final String DEFAULT_USERNAME = "여행자님";
   private final RetripRepository retripRepository;
+  private final TransactionTemplate transactionTemplate;
 
-  @Transactional
+  public Mono<TravelAnalysisResponseDto> saveRetripReactive(AnalysisResponse analysisResponse, List<ImageMetaData> allMetadata) {
+    return Mono.fromCallable(() ->
+            transactionTemplate.execute(status -> {
+              return saveRetrip(analysisResponse, allMetadata);
+            })
+        )
+        .subscribeOn(Schedulers.boundedElastic())
+        .doOnError(err -> {
+        });
+  }
+
   public TravelAnalysisResponseDto saveRetrip(AnalysisResponse analysisResponse, List<ImageMetaData> allMetadata) {
     Retrip retrip = buildRetripFromAnalysis(analysisResponse);
     updateRetripDetailsFromMetadata(retrip, allMetadata);
@@ -86,8 +99,9 @@ public class RetripPersistenceService {
     if (metadataList == null || metadataList.isEmpty()) {
       return;
     }
-    metadataList.sort(Comparator.comparing(ImageMetaData::getTakenDate,
-        Comparator.nullsLast(Comparator.naturalOrder())));
+
+    List<ImageMetaData> sortableList = new ArrayList<>(metadataList);
+    sortableList.sort(Comparator.comparing(ImageMetaData::getTakenDate, Comparator.nullsLast(Comparator.naturalOrder())));
 
     LocalDateTime startDate = findEarliestTakenDate(metadataList);
     LocalDateTime endDate = findLatestTakenDate(metadataList);
