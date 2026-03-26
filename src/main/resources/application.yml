@@ -6,11 +6,11 @@ spring:
     import:
       - application-secret.yml
 
-  # File Upload Setting
-  servlet:
+  webflux:
     multipart:
-      max-file-size: 30MB
-      max-request-size: 250MB
+      max-in-memory-size: 512KB
+      max-disk-usage-per-part: 10MB
+      max-parts: 25
 
 # prometheus & actuator
 management:
@@ -37,19 +37,19 @@ retrip:
     min-count: 5
     max-count: 20
 
-server:
-  # Session Config
-  servlet:
-    session:
-      timeout: 60m
-  # Tomcat Metric Setting
-  tomcat:
-    mbeanregistry:
-      enabled: true
+# AWS S3 Config
+aws:
+  s3:
+    region: ap-northeast-2
+    bucket: ${aws.s3.bucket}
+    access-key: ${aws.s3.access-key}
+    secret-key: ${aws.s3.secret-key}
 
-openai:
-  api-key: ${openai.api-key}
-  model: gpt-4.1-mini
+server:
+  netty:
+    max-initial-line-length: 8192
+    max-header-size: 32768
+    validate-headers: false
 
 ---
 spring:
@@ -74,56 +74,20 @@ spring:
       hibernate:
         format_sql: true
 
-  # Spring Security OAuth2, Client
-  security:
-    oauth2:
-      client:
-        provider:
-          kakao:
-            authorization-uri: ${kakao.oauth2.authorization-uri}
-            token-uri: ${kakao.oauth2.token-uri}
-            user-info-uri: ${kakao.oauth2.user-info-uri}
-            jwk-set-uri: ${kakao.oauth2.oidc-jwk-set-uri}
-            user-name-attribute: sub
-        registration:
-          kakao:
-            authorization-grant-type: ${kakao.oauth2.grant-type}
-            redirect-uri: ${kakao.oauth2.login-redirect-uri}
-            client-name: Kakao
-            client-authentication-method: client_secret_post
-            client-id: ${kakao.oauth2.rest-api-key}
-            client-secret: ${kakao.oauth2.client-secret-key}
-            scope:
-              - openid              # OIDC
-              - name                # 이름
-              - profile_nickname    # 닉네임
-              - account_email       # 이메일
-
   # Redis Config
   data:
     redis:
       host: ${redis.host}
       port: ${redis.port}
 
-  # Email
-  mail:
-    host: ${email.host}
-    port: ${email.port}
-    username: ${email.mail-address}
-    password: ${email.app-password}
-    properties:
-      mail.smtp:
-        auth: true
-        starttls.enable: true
-        starttls.required: true
+  codec:
+    max-in-memory-size: 10MB
 
-  cloud:
-    aws:
-      credentials:
-        access-key: ${aws.access-key-id}
-        secret-key: ${aws.secret-access-key}
-      region.static: ap-northeast-2
-      s3:
-        bucket: retrip-photos-ssafy04
-        dir-name: images
-      stack.auto: false
+retrip:
+  image:
+    min-count: 3
+    max-count: 8
+    max-size-mb: 10
+
+  processing:
+    timeout-seconds: 90

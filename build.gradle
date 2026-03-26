@@ -32,7 +32,6 @@ dependencies {
 
     // Web
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // WebFlux
@@ -55,9 +54,6 @@ dependencies {
     // Apache StringUtils
     implementation 'org.apache.commons:commons-lang3:3.17.0'
 
-    // Email
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-
     // OAuth2 Client
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
@@ -67,28 +63,13 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
 
-    // EXIF/메타데이터
-    implementation 'com.drewnoakes:metadata-extractor:2.18.0'
-
-    // TwelveMonkeys ImageIO
-    implementation 'com.twelvemonkeys.imageio:imageio-core:3.9.4'
-    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.9.4'
-    implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.9.4'
-
-    // Apache Commons Imaging
-    implementation 'org.apache.commons:commons-imaging:1.0-alpha3'
-
-    // 이미지 처리 관련 라이브러리
-    implementation 'net.coobird:thumbnailator:0.4.19'
+    // AWS S3 SDK v2
+    implementation platform('software.amazon.awssdk:bom:2.25.27')
+    implementation 'software.amazon.awssdk:s3'
 
     // Monitoring
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-
-    // OpenAI 연동
-    implementation 'com.openai:openai-java:2.8.1'
-
-
 }
 
 tasks.named('test') {
