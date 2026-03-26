@@ -32,6 +32,9 @@ jobs:
     - name: Gradle 명령 실행을 위한 권한을 부여합니다.
       run: chmod +x gradlew
 
+    - name: application-secret.yml 파일 생성
+      run: echo "${{ secrets.APPLICATION }}" > ./src/main/resources/application-secret.yml
+
     - name: Gradle clean build를 수행합니다.
       run: ./gradlew clean build
 

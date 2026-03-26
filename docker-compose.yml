@@ -8,50 +8,25 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
-      - redis
+      redis:
+        condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      SPRING_REDIS_HOST: ${SPRING_REDIS_HOST}
-      SPRING_REDIS_PORT: ${SPRING_REDIS_PORT}
+      REDIS_HOST: ${SPRING_REDIS_HOST}
+      REDIS_PORT: ${SPRING_REDIS_PORT}
     networks:
       - retrip-net
     restart: always
-
-  db:
-    image: mysql:8.0
-    platform: linux/amd64
-    container_name: retrip-db
-    env_file:
-      - .env
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    volumes:
-      - dbdata:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./docker/mysql/mysql-healthcheck.sh:/usr/local/bin/mysql-healthcheck.sh
-    networks:
-      - retrip-net
-    restart: always
-    healthcheck:
-      test: [ "CMD-SHELL", "/usr/local/bin/mysql-healthcheck.sh" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
 
   redis:
     image: redis:7
     platform: linux/amd64
     container_name: retrip-redis
-    ports:
-      - "6379:6379"
+    expose:
+      - ${SPRING_REDIS_PORT}
     networks:
       - retrip-net
     restart: always
@@ -128,7 +103,6 @@ services:
       - retrip-net
 
 volumes:
-  dbdata:
   grafana-storage:
   certbot_data:
 
