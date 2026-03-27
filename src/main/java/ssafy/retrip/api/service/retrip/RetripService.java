@@ -77,9 +77,6 @@ public class RetripService {
 
     return persistenceService.saveRetripReactive(analysisResponse, metadata)
         .flatMap(result -> {
-
-          updateJobStatus(jobId, result.getRetripId());
-
           String resultJson;
           try {
             resultJson = objectMapper.writeValueAsString(result);
@@ -87,11 +84,16 @@ public class RetripService {
             return Mono.error(new RuntimeException("결과 직렬화 실패", e));
           }
 
-          return cacheService.cacheResult(jobId, resultJson)
-              .doOnSuccess(v -> {
+          return updateJobStatus(jobId, result.getRetripId())
+              .then(cacheService.cacheResult(jobId, resultJson)
+                  .onErrorResume(e -> {
+                    log.warn("Redis 캐시 실패 (SSE 푸시는 계속 진행): jobId={}, error={}", jobId, e.getMessage());
+                    return Mono.empty();
+                  }))
+              .then(Mono.fromRunnable(() -> {
                 sseService.pushResult(jobId, resultJson);
                 log.info("분석 결과 처리 완료: jobId={}, retripId={}", jobId, result.getRetripId());
-              });
+              }));
         });
   }
 
@@ -187,13 +189,16 @@ public class RetripService {
         .then();
   }
 
-  private void updateJobStatus(String jobId, Long retripId) {
-    transactionTemplate.executeWithoutResult(status ->
-        retripJobRepository.findByJobId(jobId).ifPresent(job -> {
-          job.complete(retripId);
-          retripJobRepository.save(job);
-          log.info("RetripJob 완료: jobId={}, retripId={}", jobId, retripId);
-        })
-    );
+  private Mono<Void> updateJobStatus(String jobId, Long retripId) {
+    return Mono.fromRunnable(() ->
+            transactionTemplate.executeWithoutResult(status ->
+                retripJobRepository.findByJobId(jobId).ifPresent(job -> {
+                  job.complete(retripId);
+                  retripJobRepository.save(job);
+                  log.info("RetripJob 완료: jobId={}, retripId={}", jobId, retripId);
+                })
+            ))
+        .subscribeOn(Schedulers.boundedElastic())
+        .then();
   }
 }

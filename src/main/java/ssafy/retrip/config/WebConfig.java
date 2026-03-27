@@ -7,9 +7,6 @@ import org.springframework.web.reactive.config.WebFluxConfigurer;
 @Configuration
 public class WebConfig implements WebFluxConfigurer {
 
-  private String FRONTEND_LOCAL_SERVER = "http://127.0.0.1:5173";
-  private String BACKEND_LOCAL_SERVER = "http://127.0.0.1:8080";
-
   @Override
   public void addCorsMappings(CorsRegistry registry) {
     registry.addMapping("/api/**")
@@ -18,8 +15,10 @@ public class WebConfig implements WebFluxConfigurer {
             "https://retrip.kr",
             "https://www.retrip.kr",
             "https://api.retrip.kr",
-            FRONTEND_LOCAL_SERVER,
-            BACKEND_LOCAL_SERVER
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+            "http://127.0.0.1:8080",
+            "http://localhost:8080"
         )
         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         .allowedHeaders("*")
