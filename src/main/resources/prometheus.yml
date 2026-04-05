@@ -7,7 +7,7 @@ scrape_configs:
     static_configs:
       - targets: [ "prometheus:9090" ]
 
-  - job_name: 'retrip-actuator'
+  - job_name: 'retrip-api'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: [ 'retrip-app:8080' ]
