@@ -15,8 +15,8 @@ services:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      REDIS_HOST: ${SPRING_REDIS_HOST}
-      REDIS_PORT: ${SPRING_REDIS_PORT}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     networks:
       - retrip-net
     restart: always
@@ -60,7 +60,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data/grafana:/var/lib/grafana
       - grafana-storage:/var/lib/grafana
     depends_on:
       - prometheus
